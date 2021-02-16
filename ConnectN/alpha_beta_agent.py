@@ -120,8 +120,7 @@ class AlphaBetaAgent(agent.Agent):
             succ.append((nb,col))
         return succ
 
-
-
+    #ignore this
     # def submat(mat, startRow, startCol,n):
     #     empty = np.zeros(n*2-1, n*2-1)#create correct sized empty array
     #
@@ -147,7 +146,7 @@ class AlphaBetaAgent(agent.Agent):
         player2mask = np.true_divide(player2mask,2)
 
         masks = [player1mask, player2mask]
-        #print(masks)
+
         #create different dynamically sized kernels
         horizontal_kernel = np.array([np.ones([self.__connect_n])])
 
@@ -156,21 +155,17 @@ class AlphaBetaAgent(agent.Agent):
         diag2_kernel = np.fliplr(diag1_kernel)
         detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
 
-        for p in range(0,2):
-            for kernel in detection_kernels:
-                conv = convolve2d(masks[p], kernel, mode="valid")
-                conv[conv < 2] = 0
-                conv = np.square(conv)
-                heur[p] += np.sum(conv)
+        for p in range(0,2): #calculate scores for both players
+            for kernel in detection_kernels: #check all directions
+                conv = convolve2d(masks[p], kernel, mode="valid") #create convolution matrix
+                conv = np.square(conv) # this applies a higher weight to larger sections, 3 pieces is better than 2
+                heur[p] += np.sum(conv) #add up all the connections to create score
 
-                #print(conv)
-            #print(heur)
 
-        SCORE =  heur[0]-heur[1]
-        if player == 2:
+        SCORE =  heur[0]-heur[1] #final score is the players score - opponet score (this is probably very wrong)
+        if player == 2: #invert if the player is 2
             SCORE = SCORE * -1
-       # print(board)
-        #print(SCORE)
+
         return SCORE
 
 #Final agent for class tournament (After testing and crude optimization)
