@@ -1,5 +1,9 @@
 import math
 import agent
+import numpy as np
+from scipy.signal import convolve2d
+
+
 import time
 from functools import reduce
 
@@ -16,6 +20,7 @@ class AlphaBetaAgent(agent.Agent):
         # Max search depth
         self.__score_weights = score_weights
         self.__offensiveness = offensiveness
+
     # Heuristic that determines the maximum depth based on turn
     def __depth_heuristic(self, state):
         turn = 0
@@ -113,46 +118,64 @@ class AlphaBetaAgent(agent.Agent):
             succ.append((nb,col))
         return succ
 
+
+
+    # def submat(mat, startRow, startCol,n):
+    #     empty = np.zeros(n*2-1, n*2-1)#create correct sized empty array
+    #
+    #     result[:a.shape[0],:a.shape[1]]
+    #
+    #     return mat[:startRow:startRow+(n*2-1),startCol:startCol+(n*2-1)]
+    # # create submat centering on the position being played
+    # centered = self.submat(board, curRow - (n - 1), curCol - (n - 1), n)
+
     #Utility function that takes a board_state and its player value
-    def __utility(self, board_state, player):
-        scores = [0,0] #Array that stores the score of both players as the function loops through the cells and directions
-        for dx, dy in [(1,0),(1,1),(0,1),(1,-1)]:#Loops through directions/ dx dy combinations
-            for i in range(self.__board_x): #Loops through rows
-                for j in range(self.__board_y): #Loops through columns
-                    this = board_state[i][j] #Gets the value/piece in current cell (0-empty, 1-current player, 2-opponent)
-                    sequence = 1 if this != 0 else 0 #Initializes the sequence size if the first cell is not empty
-                    #Iterative variables for step
-                    i_step = i
-                    j_step = j
-                    for step in range(self.__connect_n-1): #Iterate steps from current cell
-                        i_step += dx
-                        j_step += dy
-                        #Checks for off-bounds steps
-                        if i_step >= self.__board_x or i_step < 0 or j_step >= self.__board_y or j_step < 0:
-                            sequence = 0 #Reset sequence value to 0
-                            break
-                            
-                        next = board_state[i_step][j_step] #Gets next cell
-                        if this == 0 and next > 0:
-                            # If all cells so far were empty and the next is not, update this sequence to match the player with piece on next cell
-                            this = next
-                            sequence = 1
-                        elif this != next:
-                            if next == 0:
-                                continue
-                            # If the cells dont match and are from different players, this sequence cant be a winning sequence for either
-                            # Resets sequence to 0
-                            sequence = 0
-                            break
-                        else:
-                            # Else, the piece is from the same player and the sequence count increases
-                            if this > 0:
-                                sequence += 1
-                        #Adds score based on sequence and weights predefined in the class
-                    scores[this-1] += self.__score_weights[sequence]
-        score = self.__offensiveness * scores[0] - (1 - self.__offensiveness) * scores[1]
+    def __utility(self, board, player):
+        heur = [0,0] #score for each player
+        #given a board, calcuate the number of connected pieces for both players on whole board
+
+        #copy boards
+        player1mask = np.copy(np.array(board))
+        player2mask = np.copy(player1mask)
+
+        #apply mask for player 1
+        player1mask[player1mask > 1] = 0
+        #apply mask for player 2
+        player2mask[player2mask < 2] = 0
+        player2mask = np.true_divide(player2mask,2)
+
+        masks = [player1mask, player2mask]
+        #print(masks)
+        #create different dynamically sized kernels
+        horizontal_kernel = np.array([np.ones([self.__connect_n])])
+
+        vertical_kernel = np.transpose(horizontal_kernel)
+        diag1_kernel = np.eye(self.__connect_n, dtype=np.uint8)
+        diag2_kernel = np.fliplr(diag1_kernel)
+        detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
+
+        for p in range(0,2):
+            for kernel in detection_kernels:
+                heur[p] += np.sum(convolve2d(masks[p], kernel, mode="valid"))
+
+        #print(heur)
+
+        SCORE =  heur[0]-heur[1]
         if player == 2:
-            score = -1 * score
+            SCORE = SCORE * -1
+        print(SCORE)
+        return SCORE
+
+
+
+
+        # scores = [0,0] #Array that stores the score of both players as the function loops through the cells and directions
+        #
+        #                 #Adds score based on sequence and weights predefined in the class
+        #             scores[this-1] += self.__score_weights[sequence]
+        # score = self.__offensiveness * scores[0] - (1 - self.__offensiveness) * scores[1]
+        # if player == 2:
+        #     score = -1 * score
         return score #Returns the score for the state
 #Final agent for class tournament (After testing and crude optimization)
 THE_AGENT = AlphaBetaAgent("Group27", [0,10,50,5000,1000000], 0.35)
