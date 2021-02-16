@@ -10,15 +10,16 @@ from functools import reduce
 ###########################
 # Alpha-Beta Search Agent #
 ###########################
+from ConnectN.board import Board
+
 
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
     # Class constructor.
-    def __init__(self, name, score_weights, offensiveness):
+    def __init__(self, name, offensiveness):
         super().__init__(name)
         # Max search depth
-        self.__score_weights = score_weights
         self.__offensiveness = offensiveness
 
     # Heuristic that determines the maximum depth based on turn
@@ -41,13 +42,14 @@ class AlphaBetaAgent(agent.Agent):
         else:
             depth = (state.h * state.w) - turn
         return depth
+
     # Computes the value, action of a max value node in pruning
     def __max_value(self, state, depth, alpha, beta):
         win_state = state.get_outcome()
         if win_state == state.player:
-            return self.__score_weights[4], -1
+            return 1000, -1
         elif win_state != 0:
-            return -self.__score_weights[4], -1
+            return -1000, -1
         if len(state.free_cols()) == 0:
             return 0, -1
         if depth >= 0:
@@ -69,9 +71,9 @@ class AlphaBetaAgent(agent.Agent):
         
         win_state = state.get_outcome()
         if win_state == state.player:
-            return self.__score_weights[4]
+            return 1000
         elif win_state != 0:
-            return -self.__score_weights[4]
+            return -1000
         if len(state.free_cols()) == 0:
             return 0
         if depth >= 0:
@@ -80,7 +82,7 @@ class AlphaBetaAgent(agent.Agent):
             worst = math.inf
 
             for s, a in self.__get_successors(state):
-                new_utility, a = self.__max_value(s, depth + 1, alpha, beta)
+                new_utility, a = self.__max_value(s, depth+ 1, alpha, beta)
                 worst = min(worst, new_utility)
                 beta = min(beta, worst)
                 if worst <= alpha:
@@ -156,26 +158,20 @@ class AlphaBetaAgent(agent.Agent):
 
         for p in range(0,2):
             for kernel in detection_kernels:
-                heur[p] += np.sum(convolve2d(masks[p], kernel, mode="valid"))
+                conv = convolve2d(masks[p], kernel, mode="valid")
+                conv[conv < 2] = 0
+                conv = np.square(conv)
+                heur[p] += np.sum(conv)
 
-        #print(heur)
+                #print(conv)
+            #print(heur)
 
         SCORE =  heur[0]-heur[1]
         if player == 2:
             SCORE = SCORE * -1
-        print(SCORE)
+       # print(board)
+        #print(SCORE)
         return SCORE
 
-
-
-
-        # scores = [0,0] #Array that stores the score of both players as the function loops through the cells and directions
-        #
-        #                 #Adds score based on sequence and weights predefined in the class
-        #             scores[this-1] += self.__score_weights[sequence]
-        # score = self.__offensiveness * scores[0] - (1 - self.__offensiveness) * scores[1]
-        # if player == 2:
-        #     score = -1 * score
-        return score #Returns the score for the state
 #Final agent for class tournament (After testing and crude optimization)
-THE_AGENT = AlphaBetaAgent("Group27", [0,10,50,5000,1000000], 0.35)
+THE_AGENT = AlphaBetaAgent("Group27", 1)
