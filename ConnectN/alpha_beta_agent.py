@@ -10,17 +10,15 @@ from functools import reduce
 ###########################
 # Alpha-Beta Search Agent #
 ###########################
-from ConnectN.board import Board
+from board import Board
 
 
 class AlphaBetaAgent(agent.Agent):
     """Agent that uses alpha-beta search"""
 
     # Class constructor.
-    def __init__(self, name, offensiveness):
+    def __init__(self, name):
         super().__init__(name)
-        # Max search depth
-        self.__offensiveness = offensiveness
 
     # Heuristic that determines the maximum depth based on turn
     def __depth_heuristic(self, state):
@@ -46,8 +44,10 @@ class AlphaBetaAgent(agent.Agent):
     # Computes the value, action of a max value node in pruning
     def __max_value(self, state, depth, alpha, beta):
         win_state = state.get_outcome()
+        # If there is a win condtion for the current player assign a value higher than the utility function will ever produce
         if win_state == state.player:
             return 1000, -1
+        # If there is a win condtion for the opposing player assign a value lower than the utility function will ever produce
         elif win_state != 0:
             return -1000, -1
         if len(state.free_cols()) == 0:
@@ -120,16 +120,6 @@ class AlphaBetaAgent(agent.Agent):
             succ.append((nb,col))
         return succ
 
-    #ignore this
-    # def submat(mat, startRow, startCol,n):
-    #     empty = np.zeros(n*2-1, n*2-1)#create correct sized empty array
-    #
-    #     result[:a.shape[0],:a.shape[1]]
-    #
-    #     return mat[:startRow:startRow+(n*2-1),startCol:startCol+(n*2-1)]
-    # # create submat centering on the position being played
-    # centered = self.submat(board, curRow - (n - 1), curCol - (n - 1), n)
-
     #Utility function that takes a board_state and its player value
     def __utility(self, board, player):
         heur = [0,0] #score for each player
@@ -149,17 +139,19 @@ class AlphaBetaAgent(agent.Agent):
 
         #create different dynamically sized kernels
         horizontal_kernel = np.array([np.ones([self.__connect_n])])
-
         vertical_kernel = np.transpose(horizontal_kernel)
         diag1_kernel = np.eye(self.__connect_n, dtype=np.uint8)
         diag2_kernel = np.fliplr(diag1_kernel)
         detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
 
         for p in range(0,2): #calculate scores for both players
+            #win = False
             for kernel in detection_kernels: #check all directions
                 conv = convolve2d(masks[p], kernel, mode="valid") #create convolution matrix
+                #if (conv == self.__connect_n).any(): win = True
                 conv = np.square(conv) # this applies a higher weight to larger sections, 3 pieces is better than 2
                 heur[p] += np.sum(conv) #add up all the connections to create score
+                #if win: heur[p] = heur[p] * 10
 
 
         SCORE =  heur[0]-heur[1] #final score is the players score - opponet score (this is probably very wrong)
@@ -169,4 +161,4 @@ class AlphaBetaAgent(agent.Agent):
         return SCORE
 
 #Final agent for class tournament (After testing and crude optimization)
-THE_AGENT = AlphaBetaAgent("Group27", 1)
+THE_AGENT = AlphaBetaAgent("Group27")
