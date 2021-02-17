@@ -4,8 +4,8 @@ import agent
 import alpha_beta_agent as aba
 
 # Set random seed for reproducibility
-random.seed(2)
-for i in range(0,10):
+random.seed(4)
+for i in range(0,1):
     #
     # Random vs. Random
     #
@@ -27,9 +27,9 @@ for i in range(0,10):
     #
     # Random vs. AlphaBeta
     #
-    g = game.Game(7, # width
-                   6, # height
-                   4, # tokens in a row to win
+    g = game.Game(10, # width
+                   8, # height
+                   5, # tokens in a row to win
                    agent.RandomAgent("random"),        # player 1
                    aba.THE_AGENT) # player 2
 

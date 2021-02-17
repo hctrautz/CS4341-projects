@@ -22,23 +22,28 @@ class AlphaBetaAgent(agent.Agent):
 
     # Heuristic that determines the maximum depth based on turn
     def __depth_heuristic(self, state):
+        # Max # of Turns = W * H 
+        # 21 is the median - Depth of 7 or 6
+        # -(1/# of turns) 
+        # -(1/8x - 2.449)^2 + 6
         turn = 0
         for r in state.board:
             for c in r:
                 if c != 0:
                     turn += 1
-        if turn < 2:
-            self.__board_x = state.h
-            self.__board_y = state.w
-            self.__connect_n = state.n
-        if turn <state.h:
-            depth = 2
-        elif turn < 2 * state.h + state.w:
-            depth = 4
-        elif (turn < (state.h-2) * (state.w-1) and state.n == 4) or turn < (state.h-1) * (state.w-1):
-            depth = 6
-        else:
-            depth = (state.h * state.w) - turn
+                    
+        depth = -((1/state.w)*turn - 2.449)**2 + 6
+        # if turn < 2:
+        #     # Don't have to do heruistic calculation on the first move 
+        self.__board_x = state.h
+        self.__board_y = state.w
+        self.__connect_n = state.n
+        # if turn <state.h:
+        #     depth = 2
+        # elif turn < 2 * state.h + state.w:
+        #     depth = 4
+        # elif (turn < (state.h-2) * (state.w-1) and state.n == 4) or turn < (state.h-1) * (state.w-1):
+        #     depth = 6
         return depth
 
     # Computes the value, action of a max value node in pruning
