@@ -67,7 +67,7 @@ class AlphaBetaAgent(agent.Agent):
         else:
             best = (-math.inf, -1)
             for s, a in self.__get_successors(state):
-                new_utility = self.__min_value(s, depth + 1, alpha, beta)
+                new_utility = self.__min_value(s,  depth + 1, alpha, beta)
                 if new_utility >= best[0]:
                     best = (new_utility, a)
                 alpha = max(alpha, best[0])
@@ -105,6 +105,7 @@ class AlphaBetaAgent(agent.Agent):
         depth = -self.__depth_heuristic(brd)
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
         if action < 0 or action > (self.__board_y - 1):
+            print("NEVER BE IN HERE")
             action = abs(
                 action % self.__board_y)  # This line should not be relevant unless something goes wrong and the function returns an action
         return action
@@ -131,27 +132,44 @@ class AlphaBetaAgent(agent.Agent):
 
 
 
-    def my_is_line_at(self, x, y, dx, dy,board):
+    def my_is_line_at(self, x, y, dx, dy,board,p):
         """Return True if a line of identical tokens exists starting at (x,y) in direction (dx,dy)"""
-        # Avoid out-of-bounds errors
-        if ((x + (self.__connect_n - 1) * dx >= self.__board_y) or
-                (y + (self.__connect_n - 1) * dy < 0) or (y + (self.__connect_n - 1) * dy >= self.__board_x)):
+        token = p
+        if (token == 0):  # skips spaces with no token
             return False
-        # Get token at (x,y)
-        t = board[y][x]
-        # Go through elements
-        for i in range(1, self.__connect_n):
-            if board[y + i * dy][x + i * dx] != t:
-                return i
-        return self.__connect_n
+        count = 1
+        while (count < 4):  # searches for 4 of the same token in a row
+            currx = x + (dx * count)  # finds coordinates for space in the given direction
+            curry = y + (dy * count)
+            if (currx < 0 or currx >= self.__board_x):  # returns false if requested space is not on the board (out of bounds)
+                return count
+            if (curry < 0 or curry >= self.__board_y):
+                return count
+            if (board[currx][curry] == token):  # if the token is found, increments counter and loops
+                count += 1
+            else:  # if the value doesn't equal the token
+                return count
+        return count
+
+       # # Avoid out-of-bounds errors
+        # if ((x + (self.__connect_n - 1) * dx >= self.__board_y) or
+        #         (y + (self.__connect_n - 1) * dy < 0) or (y + (self.__connect_n - 1) * dy >= self.__board_x)):
+        #     return False
+        # # Get token at (x,y)
+        # t = board[y][x]
+        # # Go through elements
+        # for i in range(1, self.__connect_n):
+        #     if board[y + i * dy][x + i * dx] != t:
+        #         return i
+        # return self.__connect_n
 
 
-    def my_is_any_line_at(self, x, y,board):
+    def my_is_any_line_at(self, x, y,board,p):
         """Return True if a line of identical tokens exists starting at (x,y) in any direction"""
-        return (np.sum([self.my_is_line_at(x, y, 1, 0,board),   # Horizontal
-                self.my_is_line_at(x, y, 0, 1,board), # Vertical
-                self.my_is_line_at(x, y, 1, 1,board),  # Diagonal up
-                self.my_is_line_at(x, y, 1, -1,board)]))   # Diagonal down
+        return (np.sum([self.my_is_line_at(x, y, 1, 0,board,p)**3,   # Horizontal
+                self.my_is_line_at(x, y, 0, 1,board,p)**3, # Vertical
+                self.my_is_line_at(x, y, 1, 1,board,p)**3,  # Diagonal up
+                self.my_is_line_at(x, y, 1, -1,board,p)**3]))   # Diagonal down
 
 
 
@@ -159,15 +177,28 @@ class AlphaBetaAgent(agent.Agent):
     def __utility(self, board, player):
 
         scores = [0,0]  # Array that stores the score of both players as the function loops through the cells and directions
-        for p in range(1,3):#for both players
-            for x in range(self.__board_y):
-                for y in range(self.__board_x):
-                    if (board[y][x] != 0) and self.my_is_any_line_at(x, y,board):
-                        scores[p-1] = board[y][x]
 
-        score = scores[0]**3 - scores[1]**3
-        if player == 2:
-            score = -1 * score
+        aboard = np.array(board)
+        colsheights = []
+        for cols in range(0, self.__board_x):
+            colsheights = []
+            curcol = []
+            for i in range(0, self.__board_y):
+                curcol.append(aboard[:,i])
+                colheight = np.count_nonzero(curcol[i])
+                colsheights.append(colheight)
+
+
+        for p in range(1,3):#for both players
+            for col in range(self.__board_y): #for 0 to width
+                    if(colsheights[col] != 0): # checking that highest column is not 0
+                        scores[p-1] = self.my_is_any_line_at(col, colsheights[col], board, p)
+                        #print(board)
+                        print(scores, p,col,colsheights[col])
+
+        score = scores[1] - scores[0]
+        # if player == 2:
+        #     score = -1 * score
         return score;  # Returns the score for the state
 
 
