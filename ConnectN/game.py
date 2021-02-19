@@ -34,7 +34,7 @@ class Game(object):
         # Current player
         p = 0
         while self.board.free_cols() and self.board.get_outcome() == 0:
-            self.board.print_it()
+            #self.board.print_it()
             # Copy board so player can't modify it
             x = self.players[p].go(self.board.copy())
             print(self.players[p].name, "move:", x)

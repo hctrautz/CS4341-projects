@@ -3,7 +3,6 @@ import agent
 import numpy as np
 from scipy.signal import convolve2d
 
-
 import time
 from functools import reduce
 
@@ -34,7 +33,7 @@ class AlphaBetaAgent(agent.Agent):
         if turn < 2:
             depth = 0
         else:
-            depth =  -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
+            depth = -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
             if depth < 1:
                 depth = 1
         # if turn < 2:
@@ -64,9 +63,9 @@ class AlphaBetaAgent(agent.Agent):
         if depth >= 0:
             utility = self.__utility(state.board, state.player)
             return utility, -1
-        
+
         else:
-            best = (-math.inf,-1)
+            best = (-math.inf, -1)
             for s, a in self.__get_successors(state):
                 new_utility = self.__min_value(s, depth + 1, alpha, beta)
                 if new_utility >= best[0]:
@@ -75,9 +74,10 @@ class AlphaBetaAgent(agent.Agent):
                 if best[0] >= beta:
                     return best
         return best
+
     # Computes the value, action of a max value node in pruning
     def __min_value(self, state, depth, alpha, beta):
-        
+
         win_state = state.get_outcome()
         if win_state == state.player:
             return 1000
@@ -91,14 +91,13 @@ class AlphaBetaAgent(agent.Agent):
             worst = math.inf
 
             for s, a in self.__get_successors(state):
-                new_utility, a = self.__max_value(s, depth+ 1, alpha, beta)
+                new_utility, a = self.__max_value(s, depth + 1, alpha, beta)
                 worst = min(worst, new_utility)
                 beta = min(beta, worst)
                 if worst <= alpha:
                     return worst
         return worst
-            
-        
+
     # Pick a column for the agent to play (External interface).
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
@@ -106,7 +105,8 @@ class AlphaBetaAgent(agent.Agent):
         depth = -self.__depth_heuristic(brd)
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
         if action < 0 or action > (self.__board_y - 1):
-            action = abs(action % self.__board_y) #This line should not be relevant unless something goes wrong and the function returns an action
+            action = abs(
+                action % self.__board_y)  # This line should not be relevant unless something goes wrong and the function returns an action
         return action
 
     # Get the successors of the given board.
@@ -126,48 +126,50 @@ class AlphaBetaAgent(agent.Agent):
             # (This internally changes nb.player, check the method definition!)
             nb.add_token(col)
             # Add board to list of successors
-            succ.append((nb,col))
+            succ.append((nb, col))
         return succ
 
-    #Utility function that takes a board_state and its player value
+
+
+    def my_is_line_at(self, x, y, dx, dy,board):
+        """Return True if a line of identical tokens exists starting at (x,y) in direction (dx,dy)"""
+        # Avoid out-of-bounds errors
+        if ((x + (self.__connect_n - 1) * dx >= self.__board_y) or
+                (y + (self.__connect_n - 1) * dy < 0) or (y + (self.__connect_n - 1) * dy >= self.__board_x)):
+            return False
+        # Get token at (x,y)
+        t = board[y][x]
+        # Go through elements
+        for i in range(1, self.__connect_n):
+            if board[y + i * dy][x + i * dx] != t:
+                return i
+        return self.__connect_n
+
+
+    def my_is_any_line_at(self, x, y,board):
+        """Return True if a line of identical tokens exists starting at (x,y) in any direction"""
+        return (np.sum([self.my_is_line_at(x, y, 1, 0,board),   # Horizontal
+                self.my_is_line_at(x, y, 0, 1,board), # Vertical
+                self.my_is_line_at(x, y, 1, 1,board),  # Diagonal up
+                self.my_is_line_at(x, y, 1, -1,board)]))   # Diagonal down
+
+
+
+    # Utility function that takes a board_state and its player value
     def __utility(self, board, player):
-        heur = [0,0] #score for each player
-        #given a board, calcuate the number of connected pieces for both players on whole board
 
-        #copy boards
-        player1mask = np.copy(np.array(board))
-        player2mask = np.copy(player1mask)
+        scores = [0,0]  # Array that stores the score of both players as the function loops through the cells and directions
+        for p in range(1,3):#for both players
+            for x in range(self.__board_y):
+                for y in range(self.__board_x):
+                    if (board[y][x] != 0) and self.my_is_any_line_at(x, y,board):
+                        scores[p-1] = board[y][x]
 
-        #apply mask for player 1
-        player1mask[player1mask > 1] = 0
-        #apply mask for player 2
-        player2mask[player2mask < 2] = 0
-        player2mask = np.true_divide(player2mask,2)
-
-        masks = [player1mask, player2mask]
-
-        #create different dynamically sized kernels
-        horizontal_kernel = np.array([np.ones([self.__connect_n])])
-        vertical_kernel = np.transpose(horizontal_kernel)
-        diag1_kernel = np.eye(self.__connect_n, dtype=np.uint8)
-        diag2_kernel = np.fliplr(diag1_kernel)
-        detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
-
-        for p in range(0,2): #calculate scores for both players
-            #win = False
-            for kernel in detection_kernels: #check all directions
-                conv = convolve2d(masks[p], kernel, mode="valid") #create convolution matrix
-                #if (conv == self.__connect_n).any(): win = True
-                conv = np.square(conv) # this applies a higher weight to larger sections, 3 pieces is better than 2
-                heur[p] += np.sum(conv) #add up all the connections to create score
-                #if win: heur[p] = heur[p] * 10
+        score = scores[0]**3 - scores[1]**3
+        if player == 2:
+            score = -1 * score
+        return score;  # Returns the score for the state
 
 
-        SCORE =  heur[0]-heur[1] #final score is the players score - opponet score (this is probably very wrong)
-        if player == 2: #invert if the player is 2
-            SCORE = SCORE * -1
-
-        return SCORE
-
-#Final agent for class tournament (After testing and crude optimization)
+# Final agent for class tournament (After testing and crude optimization)
 THE_AGENT = AlphaBetaAgent("Group27")
