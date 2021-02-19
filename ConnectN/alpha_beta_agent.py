@@ -31,8 +31,12 @@ class AlphaBetaAgent(agent.Agent):
             for c in r:
                 if c != 0:
                     turn += 1
-                    
-        depth = -((1/state.w)*turn - 2.449)**2 + 6
+        if turn < 2:
+            depth = 0
+        else:
+            depth =  -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
+            if depth < 1:
+                depth = 1
         # if turn < 2:
         #     # Don't have to do heruistic calculation on the first move 
         self.__board_x = state.h
@@ -101,8 +105,8 @@ class AlphaBetaAgent(agent.Agent):
         turn = 0
         depth = -self.__depth_heuristic(brd)
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
-        if action < 0 or action > 6:
-            action = abs(action % 7) #This line should not be relevant unless something goes wrong and the function returns an action
+        if action < 0 or action > (self.__board_y - 1):
+            action = abs(action % self.__board_y) #This line should not be relevant unless something goes wrong and the function returns an action
         return action
 
     # Get the successors of the given board.
