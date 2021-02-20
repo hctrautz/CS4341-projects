@@ -53,7 +53,7 @@ class Game(object):
             else:
                 p = 0
         # Print game outcome
-        #self.board.print_it()
+        self.board.print_it()
         outcome = self.board.get_outcome()
         print("Game over!")
         if outcome == 0:
