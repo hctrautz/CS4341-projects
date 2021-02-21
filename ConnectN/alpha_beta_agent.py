@@ -33,14 +33,14 @@ class AlphaBetaAgent(agent.Agent):
         if turn < 2:
             depth = 0
         else:
-            depth = -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
+            depth = -((1 / (state.w + (state.w // 2)) * turn) - (state.h / 3)) ** 2 + 6
             if depth < 1:
                 depth = 2
         # if turn < 2:
         #     # Don't have to do heruistic calculation on the first move 
-        self.__board_x = state.h
-        self.__board_y = state.w
-        self.__connect_n = state.n
+        self.x = state.h
+        self.y = state.w
+        self.n = state.n
         # if turn <state.h:
         #     depth = 2
         # elif turn < 2 * state.h + state.w:
@@ -104,9 +104,8 @@ class AlphaBetaAgent(agent.Agent):
         turn = 0
         depth = -self.__depth_heuristic(brd)
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
-        if action < 0 or action > (self.__board_y - 1):
-            print("SOMETHING VERY WRONG")
-            action = abs( self.__board_y//2)  # This line should not be relevant unless something goes wrong and the function returns an action
+        if action < 0 or action > (self.y - 1):
+            action = abs( self.y // 2)  # This line should not be relevant unless something goes wrong and the function returns an action
         return action
 
     # Get the successors of the given board.
@@ -130,14 +129,14 @@ class AlphaBetaAgent(agent.Agent):
         return succ
 
     def givelinepoints(self, i):
-        mid = np.ceil(self.__connect_n / 2)  # doesnt work 100% for size 10 board //TODO
+        mid = np.ceil(self.n / 2)  # doesnt work 100% for size 10 board
         return mid - np.abs(mid - i)
 
     def findhole(self, board, startrow, startcol, dx, dy):
-        for i in range(self.__connect_n):
+        for i in range(self.n):
             if board[startrow + i * dy][startcol + i * dx] == 0:
                 return startrow + i * dy, startcol + i * dx
-        return startrow + self.__connect_n * dy, startcol + self.__connect_n * dx
+        return startrow + self.n * dy, startcol + self.n * dx
     # Utility function that takes a board_state and its player value
     def __utility(self, board, player):
         heur = [0, 0]  # score for each player
@@ -155,9 +154,9 @@ class AlphaBetaAgent(agent.Agent):
         masks = [player1mask, player2mask]
 
         # create different dynamically sized kernels
-        horizontal_kernel = np.array([np.ones([self.__connect_n])])
+        horizontal_kernel = np.array([np.ones([self.n])])
         vertical_kernel = np.transpose(horizontal_kernel)
-        diag1_kernel = np.eye(self.__connect_n, dtype=np.uint8)
+        diag1_kernel = np.eye(self.n, dtype=np.uint8)
         diag2_kernel = np.fliplr(diag1_kernel)
         detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
 
@@ -178,13 +177,13 @@ class AlphaBetaAgent(agent.Agent):
             p2valideventhreats = 0
             convp1 = convolve2d(masks[0], detection_kernels[kernel], mode="valid")  # create convolution matrix
             convp2 = convolve2d(masks[1], detection_kernels[kernel], mode="valid")
-            if (convp1 == self.__connect_n-1).any():  # any winning move can be made
+            if (convp1 == self.n-1).any():  # any winning move can be made
                 heur[0] += 999
                 SCORE = heur[0] - heur[1]
                 if self.player == 2:  # invert if the player is 2
                     SCORE = SCORE * -1
                 return SCORE
-            if (convp2 == self.__connect_n-1).any():  # any winning move can be made
+            if (convp2 == self.n-1).any():  # any winning move can be made
                 heur[1] += 999
                 SCORE = heur[0] - heur[1]
                 if self.player == 2:  # invert if the player is 2
@@ -232,7 +231,7 @@ class AlphaBetaAgent(agent.Agent):
             for i in range(len(isolatedp1threats)):
                 curthreat = isolatedp1threats[i]
                 # condition 1
-                if (curthreat[0]+1 % 2) != 0:  # if p1curthreat is odd //TODO the indexing maybe not fucked
+                if (curthreat[0]+1 % 2) != 0:  # if p1curthreat is odd
                     if not any(col == curthreat[1] and row < curthreat[0] for row, col in isolatedp2threats):  # and no even threats below it in same col from p2
                         p1validoddthreats += 1
                         if not any(row+1 % 2 != 0 for row, col in isolatedp2threats):  # and p2 has no odd threat in other columns
@@ -259,7 +258,7 @@ class AlphaBetaAgent(agent.Agent):
                 if p2valideventhreats != 0:  # and p2 has any valid even threats
                     heur[1] += 100  # give heavy points to p2
 
-        SCORE = heur[0] - heur[1]  # final score is the players score - opponet score (this is probably very wrong)
+        SCORE = heur[0] - heur[1]  # final score is the players score - opponent score
         if self.player == 2:  # invert if the player is 2
             SCORE = SCORE * -1
         #print(heur, SCORE, board)

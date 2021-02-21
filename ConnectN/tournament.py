@@ -101,7 +101,7 @@ def play_tournament(w, h, n, l, ps):
 #######################
 
 # Set random seed for reproducibility
-random.seed(5)
+random.seed(4)
 
 # Construct list of agents in the tournament
 agents = [
@@ -111,14 +111,12 @@ agents = [
     agent.RandomAgent("random3"),
     agent.RandomAgent("random4"),
     agent.RandomAgent("random5"),
-    agent.RandomAgent("random6"),
-    agent.RandomAgent("random7"),
-    agent.RandomAgent("random8")
+    agent.RandomAgent("random6")
 ]
 
 # Run!
 play_tournament(7,      # board width
                 6,      # board height
-                5,      # tokens in a row to win
+                4,      # tokens in a row to win
                 15,     # time limit in seconds
                 agents) # player list
