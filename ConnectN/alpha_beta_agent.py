@@ -79,7 +79,7 @@ class AlphaBetaAgent(agent.Agent):
     def __min_value(self, state, depth, alpha, beta):
 
         win_state = state.get_outcome()
-        if win_state == state.player:
+        if win_state == self.player:
             return 1000
         elif win_state != 0:
             return -1000
@@ -106,8 +106,7 @@ class AlphaBetaAgent(agent.Agent):
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
         if action < 0 or action > (self.__board_y - 1):
             print("SOMETHING VERY WRONG")
-            action = abs(
-                action % self.__board_y)  # This line should not be relevant unless something goes wrong and the function returns an action
+            action = abs( self.__board_y//2)  # This line should not be relevant unless something goes wrong and the function returns an action
         return action
 
     # Get the successors of the given board.
@@ -179,19 +178,17 @@ class AlphaBetaAgent(agent.Agent):
             p2valideventhreats = 0
             convp1 = convolve2d(masks[0], detection_kernels[kernel], mode="valid")  # create convolution matrix
             convp2 = convolve2d(masks[1], detection_kernels[kernel], mode="valid")
-            if (convp1 == self.__connect_n).any():  # any winning move can be made
+            if (convp1 == self.__connect_n-1).any():  # any winning move can be made
                 heur[0] += 999
                 SCORE = heur[0] - heur[1]
                 if self.player == 2:  # invert if the player is 2
                     SCORE = SCORE * -1
-                    print("found winning")
                 return SCORE
-            if (convp2 == self.__connect_n).any():  # any winning move can be made
+            if (convp2 == self.__connect_n-1).any():  # any winning move can be made
                 heur[1] += 999
                 SCORE = heur[0] - heur[1]
                 if self.player == 2:  # invert if the player is 2
                     SCORE = SCORE * -1
-                print("found winning")
                 return SCORE
 
 
@@ -201,11 +198,11 @@ class AlphaBetaAgent(agent.Agent):
                     if convp1[i][j] != 0:  # something in the line from p1
                         if convp2[i][j] == 0:  # nothing blocking from opponent
                             heur[0] += self.givelinepoints(i + 1)  # give small points to p1
-                            if convp1[i][j] == self.__connect_n - 1:
+                            if convp1[i][j] >= 1:
                                 p1threats.append((i, j, kernel))  # add threats for p1
                     elif convp2[i][j] != 0:  # something in line from p2 and not from p1
                         heur[1] += self.givelinepoints(i + 1)  # give small points to p2
-                        if convp2[i][j] == self.__connect_n - 1:
+                        if convp2[i][j] >= 1:
                             p2threats.append((i, j, kernel))  # add threats for p2
 
             # convert threat tuple into row and col of actual threat
