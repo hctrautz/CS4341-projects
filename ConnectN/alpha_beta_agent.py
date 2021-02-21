@@ -3,7 +3,6 @@ import agent
 import numpy as np
 from scipy.signal import convolve2d
 
-
 import time
 from functools import reduce
 
@@ -34,7 +33,7 @@ class AlphaBetaAgent(agent.Agent):
         if turn < 2:
             depth = 0
         else:
-            depth =  -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
+            depth = -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
             if depth < 1:
                 depth = 1
         # if turn < 2:
@@ -54,7 +53,7 @@ class AlphaBetaAgent(agent.Agent):
     def __max_value(self, state, depth, alpha, beta):
         win_state = state.get_outcome()
         # If there is a win condtion for the current player assign a value higher than the utility function will ever produce
-        if win_state == state.player:
+        if win_state == self.player:
             return 1000, -1
         # If there is a win condtion for the opposing player assign a value lower than the utility function will ever produce
         elif win_state != 0:
@@ -64,9 +63,9 @@ class AlphaBetaAgent(agent.Agent):
         if depth >= 0:
             utility = self.__utility(state.board, state.player)
             return utility, -1
-        
+
         else:
-            best = (-math.inf,-1)
+            best = (-math.inf, -1)
             for s, a in self.__get_successors(state):
                 new_utility = self.__min_value(s, depth + 1, alpha, beta)
                 if new_utility >= best[0]:
@@ -75,9 +74,10 @@ class AlphaBetaAgent(agent.Agent):
                 if best[0] >= beta:
                     return best
         return best
+
     # Computes the value, action of a max value node in pruning
     def __min_value(self, state, depth, alpha, beta):
-        
+
         win_state = state.get_outcome()
         if win_state == state.player:
             return 1000
@@ -91,14 +91,13 @@ class AlphaBetaAgent(agent.Agent):
             worst = math.inf
 
             for s, a in self.__get_successors(state):
-                new_utility, a = self.__max_value(s, depth+ 1, alpha, beta)
+                new_utility, a = self.__max_value(s, depth + 1, alpha, beta)
                 worst = min(worst, new_utility)
                 beta = min(beta, worst)
                 if worst <= alpha:
                     return worst
         return worst
-            
-        
+
     # Pick a column for the agent to play (External interface).
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
@@ -106,7 +105,9 @@ class AlphaBetaAgent(agent.Agent):
         depth = -self.__depth_heuristic(brd)
         utility, action = self.__max_value(brd, depth, -math.inf, math.inf)
         if action < 0 or action > (self.__board_y - 1):
-            action = abs(action % self.__board_y) #This line should not be relevant unless something goes wrong and the function returns an action
+            print("SOMETHING VERY WRONG")
+            action = abs(
+                action % self.__board_y)  # This line should not be relevant unless something goes wrong and the function returns an action
         return action
 
     # Get the successors of the given board.
@@ -126,48 +127,147 @@ class AlphaBetaAgent(agent.Agent):
             # (This internally changes nb.player, check the method definition!)
             nb.add_token(col)
             # Add board to list of successors
-            succ.append((nb,col))
+            succ.append((nb, col))
         return succ
 
-    #Utility function that takes a board_state and its player value
-    def __utility(self, board, player):
-        heur = [0,0] #score for each player
-        #given a board, calcuate the number of connected pieces for both players on whole board
+    def givelinepoints(self, i):
+        mid = np.ceil(self.__connect_n / 2)  # doesnt work 100% for size 10 board //TODO
+        return mid - np.abs(mid - i)
 
-        #copy boards
+    def findhole(self, board, startrow, startcol, dx, dy):
+        for i in range(self.__connect_n):
+            if board[startrow + i * dy][startcol + i * dx] == 0:
+                return startrow + i * dy, startcol + i * dx
+        return startrow + self.__connect_n * dy, startcol + self.__connect_n * dx
+    # Utility function that takes a board_state and its player value
+    def __utility(self, board, player):
+        heur = [0, 0]  # score for each player
+
+        # copy boards
         player1mask = np.copy(np.array(board))
         player2mask = np.copy(player1mask)
 
-        #apply mask for player 1
+        # apply mask for player 1
         player1mask[player1mask > 1] = 0
-        #apply mask for player 2
+        # apply mask for player 2
         player2mask[player2mask < 2] = 0
-        player2mask = np.true_divide(player2mask,2)
+        player2mask = np.true_divide(player2mask, 2)
 
         masks = [player1mask, player2mask]
 
-        #create different dynamically sized kernels
+        # create different dynamically sized kernels
         horizontal_kernel = np.array([np.ones([self.__connect_n])])
         vertical_kernel = np.transpose(horizontal_kernel)
         diag1_kernel = np.eye(self.__connect_n, dtype=np.uint8)
         diag2_kernel = np.fliplr(diag1_kernel)
         detection_kernels = [horizontal_kernel, vertical_kernel, diag1_kernel, diag2_kernel]
 
-        for p in range(0,2): #calculate scores for both players
-            #win = False
-            for kernel in detection_kernels: #check all directions
-                conv = convolve2d(masks[p], kernel, mode="valid") #create convolution matrix
-                #if (conv == self.__connect_n).any(): win = True
-                conv = np.square(conv) # this applies a higher weight to larger sections, 3 pieces is better than 2
-                heur[p] += np.sum(conv) #add up all the connections to create score
-                #if win: heur[p] = heur[p] * 10
+        # get player 1 convmap
+        # get player 2 convmap
+        # p1threats = []
+        # p2threats = []
+        # isolatedp1threats = []
+        # isolatedp2threats = []
+        # compare to make sure overlapping areas dont get scored
+        for kernel in range(len(detection_kernels)):  # check all directions
+            p1threats = []
+            p2threats = []
+            isolatedp1threats = []
+            isolatedp2threats = []
+            p1validoddthreats = 0
+            p2validoddthreats = 0
+            p2valideventhreats = 0
+            convp1 = convolve2d(masks[0], detection_kernels[kernel], mode="valid")  # create convolution matrix
+            convp2 = convolve2d(masks[1], detection_kernels[kernel], mode="valid")
+            if (convp1 == self.__connect_n).any():  # any winning move can be made
+                heur[0] += 999
+                SCORE = heur[0] - heur[1]
+                if self.player == 2:  # invert if the player is 2
+                    SCORE = SCORE * -1
+                    print("found winning")
+                return SCORE
+            if (convp2 == self.__connect_n).any():  # any winning move can be made
+                heur[1] += 999
+                SCORE = heur[0] - heur[1]
+                if self.player == 2:  # invert if the player is 2
+                    SCORE = SCORE * -1
+                print("found winning")
+                return SCORE
 
 
-        SCORE =  heur[0]-heur[1] #final score is the players score - opponet score (this is probably very wrong)
-        if player == 2: #invert if the player is 2
+            for i in range(len(convp1)):  # length
+                for j in range(len(convp1[i])):  # width
+
+                    if convp1[i][j] != 0:  # something in the line from p1
+                        if convp2[i][j] == 0:  # nothing blocking from opponent
+                            heur[0] += self.givelinepoints(i + 1)  # give small points to p1
+                            if convp1[i][j] == self.__connect_n - 1:
+                                p1threats.append((i, j, kernel))  # add threats for p1
+                    elif convp2[i][j] != 0:  # something in line from p2 and not from p1
+                        heur[1] += self.givelinepoints(i + 1)  # give small points to p2
+                        if convp2[i][j] == self.__connect_n - 1:
+                            p2threats.append((i, j, kernel))  # add threats for p2
+
+            # convert threat tuple into row and col of actual threat
+
+            for i in range(len(p1threats)):
+                if kernel == 0:  # if horizontal_kernel
+                    isolatedp1threats.append(self.findhole(board, p1threats[i][0], p1threats[i][1], 1, 0))
+                elif kernel == 1:  # if vertical_kernel
+                    isolatedp1threats.append(self.findhole(board, p1threats[i][0], p1threats[i][1], 0, 1))
+                elif kernel == 2:  # if diag1_kernel
+                    isolatedp1threats.append(self.findhole(board, p1threats[i][0], p1threats[i][1], 1, 1))
+                elif kernel == 3:  # if diag2_kernel
+                    isolatedp1threats.append(self.findhole(board, p1threats[i][0], p1threats[i][1], 1, -1))
+
+            for i in range(len(p2threats)):
+                if kernel == 0:  # if horizontal_kernel
+                    isolatedp2threats.append(self.findhole(board, p2threats[i][0], p2threats[i][1], 1, 0))
+                elif kernel == 1:  # if vertical_kernel
+                    isolatedp2threats.append(self.findhole(board, p2threats[i][0], p2threats[i][1], 0, 1))
+                elif kernel == 2:  # if diag1_kernel
+                    isolatedp2threats.append(self.findhole(board, p2threats[i][0], p2threats[i][1], 1, 1))
+                elif kernel == 3:  # if diag2_kernel
+                    isolatedp2threats.append(self.findhole(board, p2threats[i][0], p2threats[i][1], 1, -1))
+
+            # threat conditional checking
+
+            for i in range(len(isolatedp1threats)):
+                curthreat = isolatedp1threats[i]
+                # condition 1
+                if (curthreat[0]+1 % 2) != 0:  # if p1curthreat is odd //TODO the indexing maybe not fucked
+                    if not any(col == curthreat[1] and row < curthreat[0] for row, col in isolatedp2threats):  # and no even threats below it in same col from p2
+                        p1validoddthreats += 1
+                        if not any(row+1 % 2 != 0 for row, col in isolatedp2threats):  # and p2 has no odd threat in other columns
+                            heur[0] += 100  # give heavy points to p1
+
+            for i in range(len(isolatedp2threats)):
+                curthreat = isolatedp2threats[i]
+
+                if curthreat[0]+1 % 2 != 0:  # if p2curthreat is odd
+                    if not any(col == curthreat[1] and row < curthreat[0] for row, col in isolatedp1threats):
+                        p2validoddthreats += 1
+                if curthreat[0]+1 % 2 == 0:  # if p2curthreat is even
+                    if not any(col == curthreat[1] and row < curthreat[0] for row, col in isolatedp1threats):
+                        p2valideventhreats += 1
+
+            # condition 2
+            if heur[0] == 0:  # if instead
+                if p2validoddthreats > p2validoddthreats:  # if player 1 has greater number of valid odd threats than p2 has valid odd threats
+                    if p2valideventhreats == 0:  # and p2 has no even threats
+                        heur[0] += 100  # give heavy points to p1
+
+            # condition 3
+            if heur[0] == 0:  # if neither of the above held true
+                if p2valideventhreats != 0:  # and p2 has any valid even threats
+                    heur[1] += 100  # give heavy points to p2
+
+        SCORE = heur[0] - heur[1]  # final score is the players score - opponet score (this is probably very wrong)
+        if self.player == 2:  # invert if the player is 2
             SCORE = SCORE * -1
-
+        #print(heur, SCORE, board)
         return SCORE
 
-#Final agent for class tournament (After testing and crude optimization)
+
+# Final agent for class tournament (After testing and crude optimization)
 THE_AGENT = AlphaBetaAgent("Group27")
