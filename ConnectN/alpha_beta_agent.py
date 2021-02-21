@@ -26,7 +26,7 @@ class AlphaBetaAgent(agent.Agent):
         # -(1/# of turns) 
         # -(1/8x - 2.449)^2 + 6
         turn = 0
-        for r in state.board:
+        for r in state.board: 
             for c in r:
                 if c != 0:
                     turn += 1
@@ -174,12 +174,63 @@ class AlphaBetaAgent(agent.Agent):
                         self.my_is_line_at(x, y, 1, 1, board, p) ** 3,  # Diagonal up
                         self.my_is_line_at(x, y, 1, -1, board, p) ** 3]))  # Diagonal down
 
+    def evaluate_window(self, window, player):
+        score = 0
+        opp_player = 1
+        if player == 1:
+            opp_player = 2
+
+        if window.count(player) == self.__connect_n:
+            score += 100
+        elif window.count(player) == self.__connect_n - 1 and window.count(0) == 1:
+            score += 5
+        elif (window.count(player) == self.__connect_n // 2 and window.count(0) == self.__connect_n - (self.__connect_n // 2)) or (window.count(player) == self.__connect_n - (self.__connect_n // 2) and window.count(0) == self.__connect_n // 2):
+            score += 2
+        
+        if window.count(opp_player) == self.__connect_n - 1 and window.count(0) == 1:
+            score -= 4
+        print("Final Score:", score)
+        return score
+
     # Utility function that takes a board_state and its player value
     def __utility(self, board, player):
-        print("\n")
-        scores = [0,
-                  0]  # Array that stores the score of both players as the function loops through the cells and directions
-        aboard = np.array(board)
+        
+        score = 0
+	    ## Score center column
+        center_array = [int(i) for i in list(board[:][self.__board_y // 2])]
+        center_count = center_array.count(player)
+        score += center_count * 3
+
+	## Score Horizontal
+        for r in range(self.__board_x):
+            row_array = [int(i) for i in list(board[0:][r])]
+            for c in range(self.__board_y - (self.__board_y - self.__connect_n)):
+                window = row_array[c:c+self.__connect_n]
+                score += self.evaluate_window(window, player)
+
+	## Score Vertical
+        for c in range(self.__board_y):
+            col_array = [int(i) for i in list(board[c][0:])]
+            for r in range(self.__board_x - (self.__board_x // 2)):
+                window = col_array[r:r+self.__connect_n]
+                score += self.evaluate_window(window, player)
+
+	## Score posiive sloped diagonal
+        for r in range(self.__board_x - (self.__board_x // 2)):
+            for c in range(self.__board_y - (self.__board_y - self.__connect_n)):
+                window = [board[r+i][c+i] for i in range(self.__connect_n)]
+                score += self.evaluate_window(window, player)
+
+        for r in range(self.__board_x - (self.__board_x // 2)):
+            for c in range(self.__board_y - (self.__board_y - self.__connect_n)):
+                window = [board[r+(self.__board_x // 2)-i][c+i] for i in range(self.__connect_n)]
+                score += self.evaluate_window(window, player)
+
+        return score
+        # print("\n")
+        # scores = [0,
+        #           0]  # Array that stores the score of both players as the function loops through the cells and directions
+        # aboard = np.array(board)
 
         # columnheights = []
         # curcol = []
@@ -190,17 +241,17 @@ class AlphaBetaAgent(agent.Agent):
         #     columnheights.append(colheight)
         #     #print(columnheights)
 
-        for col in range(0, self.__board_y):  # for 0 to width
-            for row in range(0, self.__board_x):
-                token = board[row][col]
-                if token != 0:
-                    scores[token - 1] += self.my_is_any_line_at(row, col, board, token)
-            print(scores, scores[1] - scores[0])
+        # for col in range(0, self.__board_y):  # for 0 to width
+        #     for row in range(0, self.__board_x):
+        #         token = board[row][col]
+        #         if token != 0:
+        #             scores[token - 1] += self.my_is_any_line_at(row, col, board, token)
+        #     print(scores, scores[1] - scores[0])
 
-        score = scores[1] - scores[0]
-        if player == 2:
-            score = scores[0] - scores[1]
-        return score;  # Returns the score for the state
+        # score = scores[1] - scores[0]
+        # if player == 2:
+        #     score = scores[0] - scores[1]
+        # return score;  # Returns the score for the state
 
 
 # Final agent for class tournament (After testing and crude optimization)
