@@ -35,7 +35,7 @@ class AlphaBetaAgent(agent.Agent):
         else:
             depth = -((1 / (state.w + (state.w / 2)) * turn) - (state.h / 3)) ** 2 + 6
             if depth < 1:
-                depth = 1
+                depth = 2
         # if turn < 2:
         #     # Don't have to do heruistic calculation on the first move 
         self.__board_x = state.h

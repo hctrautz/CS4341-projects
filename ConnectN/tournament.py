@@ -117,8 +117,8 @@ agents = [
 ]
 
 # Run!
-play_tournament(10,      # board width
-                8,      # board height
-                4,      # tokens in a row to win
+play_tournament(7,      # board width
+                6,      # board height
+                5,      # tokens in a row to win
                 15,     # time limit in seconds
                 agents) # player list
