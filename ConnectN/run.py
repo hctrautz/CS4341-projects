@@ -4,8 +4,9 @@ import agent
 import alpha_beta_agent as aba
 
 # Set random seed for reproducibility
-random.seed(4)
-for i in range(0,1):
+# random.seed(4)
+wins = 0
+for i in range(0,100):
     #
     # Random vs. Random
     #
@@ -53,3 +54,6 @@ for i in range(0,1):
 
     # Execute the game
     outcome = g.go()
+    if outcome == 2:
+        wins += 1
+print(wins)

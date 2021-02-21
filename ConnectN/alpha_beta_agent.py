@@ -53,7 +53,7 @@ class AlphaBetaAgent(agent.Agent):
     def __max_value(self, state, depth, alpha, beta):
         win_state = state.get_outcome()
         # If there is a win condtion for the current player assign a value higher than the utility function will ever produce
-        if win_state == state.player:
+        if win_state == self.player:
             return 1000, -1
         # If there is a win condtion for the opposing player assign a value lower than the utility function will ever produce
         elif win_state != 0:
@@ -79,7 +79,7 @@ class AlphaBetaAgent(agent.Agent):
     def __min_value(self, state, depth, alpha, beta):
 
         win_state = state.get_outcome()
-        if win_state == state.player:
+        if win_state == self.player:
             return 1000
         elif win_state != 0:
             return -1000
@@ -89,7 +89,6 @@ class AlphaBetaAgent(agent.Agent):
             return self.__utility(state.board, state.player)
         else:
             worst = math.inf
-
             for s, a in self.__get_successors(state):
                 new_utility, a = self.__max_value(s, 1, alpha, beta)
                 worst = min(worst, new_utility)
@@ -178,7 +177,7 @@ class AlphaBetaAgent(agent.Agent):
     def __utility(self, board, player):
         print("\n")
         scores = [0,
-                  0]  # Array that stores the score of both players as the function loops through the cells and directions
+0]  # Array that stores the score of both players as the function loops through the cells and directions
         aboard = np.array(board)
 
         # columnheights = []
@@ -195,12 +194,15 @@ class AlphaBetaAgent(agent.Agent):
                 token = board[row][col]
                 if token != 0:
                     scores[token - 1] += self.my_is_any_line_at(row, col, board, token)
-            print(scores, scores[1] - scores[0])
+            # print(scores, scores[1] - scores[0])
 
         score = scores[1] - scores[0]
         if player == 2:
             score = scores[0] - scores[1]
         return score;  # Returns the score for the state
+
+
+
 
 
 # Final agent for class tournament (After testing and crude optimization)
