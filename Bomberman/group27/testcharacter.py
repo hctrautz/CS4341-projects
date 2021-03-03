@@ -50,7 +50,7 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if (startcoords[1] + dy >= 0) and (startcoords[1] + dy < wrld.height()):
                             # No need to check impossible moves
-                            if not wrld.wall_at(startcoords[0] + dx, startcoords[1] + dy):
+                            #if not wrld.wall_at(startcoords[0] + dx, startcoords[1] + dy): #allow walls spots
                                 # make a list of moves or make a new world with each move?
                                 coords.append((startcoords[0] + dx, startcoords[1] + dy))
                                 # Set move in wrld
@@ -78,7 +78,10 @@ class TestCharacter(CharacterEntity):
             for next in self.getPlayerNeighbors(current,wrld):
 
                 self.set_cell_color(next[0], next[1], Fore.CYAN)
-                new_cost = cost_so_far[current] + 1  # graph.cost(current, next) #change this to use bomb maybe
+                wallcost = 1
+                if wrld.wall_at(next[0], next[1]):
+                    wallcost +=100
+                new_cost = cost_so_far[current] + wallcost  # graph.cost(current, next) #change this to use bomb maybe
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
                     priority = new_cost + self.getDistanceTo(next, goal)
@@ -87,3 +90,22 @@ class TestCharacter(CharacterEntity):
                     came_from[next] = current
         print(came_from)
         print("Couldn't Plan Path to Goal")
+
+
+
+
+    # Getting expectimax
+    def expectimax(node, is_max):
+        # Condition for Terminal node
+        if (node.left == None and node.right == None):
+            return node.value;
+
+        # Maximizer node. Chooses the max from the
+        # left and right sub-trees
+        if (is_max):
+            return max(expectimax(node.left, False), expectimax(node.right, False))
+
+        # Chance node. Returns the average of
+        # the left and right sub-trees
+        else:
+            return (expectimax(node.left, True) + expectimax(node.right, True)) / 2;
