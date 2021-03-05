@@ -1,8 +1,5 @@
 # This is necessary to find the main code
 import sys
-
-from group27.interactivecharacter import InteractiveCharacter
-
 sys.path.insert(0, '../../bomberman')
 sys.path.insert(1, '..')
 
@@ -23,18 +20,18 @@ g.add_monster(StupidMonster("stupid", # name
                             3, 9      # position
 ))
 
-# TODO Add your character
-# g.add_character(TestCharacter("me", # name
-#                               "C",  # avatar
-#                               0, 0  # position
-# ))
-g.add_character(InteractiveCharacter("me", # name
-                                     "C",  # avatar
-                                     0, 0  # position
+#TODO Add your character
+g.add_character(TestCharacter("me", # name
+                              "C",  # avatar
+                              0, 0  # position
 ))
+# g.add_character(InteractiveCharacter("me", # name
+#                                      "C",  # avatar
+#                                      0, 0  # position
+# ))
 
 
 
 
 # Run!
-g.go()
+g.go(3)
