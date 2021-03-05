@@ -1,39 +1,69 @@
 # This is necessary to find the main code
+from colorama import Fore, Back
+from entity import CharacterEntity
 import sys
 from statemachine import StateMachine, State
 from queue import PriorityQueue
 
 sys.path.insert(0, '../bomberman')
 # Import necessary stuff
-from entity import CharacterEntity
-from colorama import Fore, Back
 
 
 class BombermanSM(StateMachine):
-    idle = State('idle', initial=True)
-    walk = State('walk')
-    bomb = State('bomb') 
-
+    walk = State('walk', initial=True)
+    bomb = State('bomb')
+    idleBomb = State('idleBomb')
+    dodge = State('dodge')
     # Idle is detection state
-    idleToWalk = idle.to(walk)
-    idleToBomb = idle.to(bomb)
-    bombToWalk = bomb.to(walk)
-    walkToIdle = walk.to(idle)
+    walkToBomb = walk.to(bomb)
+    bombToDodge = bomb.to(dodge)
+    walkToIdleBomb = walk.to(idleBomb)
+    dodgeToIdleBomb = dodge.to(idleBomb)
+
 
 class TestCharacter(CharacterEntity):
-
-    sm = BombermanSM()
     def do(self, wrld):
-        # scan whole board for any monsters or other players
-        monsters = 0
-        players = 0
         path = dict()
-
         # get player location
         p = wrld.me(self)
-        # check if a bomb has been placed
-        if wrld.bomb_at(p.x, p.y):
-            coords = []
+        sm = BombermanSM()
+        # scan whole board for any monsters or other players
+        if(sm.current_state == BombermanSM.walk):
+
+            goal = (wrld.exitcell[0], wrld.exitcell[1])  # this could be empty
+
+            # if wrld.monsters():  # no monsters in feild, so just A* it
+            # traverse as linked list?
+            path = self.Astar(wrld, (p.x, p.y), goal)
+            fpath = [goal]
+            print(fpath)
+            while not (p.x, p.y) in fpath:
+                fpath.append(path.get(fpath[-1]))
+                # get first move of path and make the move
+            fpath.reverse()
+            print(fpath)
+            waitingForBomb = False
+            for cell in fpath:
+                if wrld.bomb_at(cell[0], cell[1]) or wrld.explosion_at(cell[0], cell[1]):
+                    waitingForBomb = True
+                    self.move(0, 0)
+
+            if(not waitingForBomb):
+                move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
+
+                if wrld.wall_at(fpath[1][0], fpath[1][1]):
+                    sm.walkToBomb()
+                else:
+                    self.move(move[0], move[1])
+
+        if(sm.current_state == BombermanSM.bomb):
+            # check if position to move to is a wall
+            print("Wall here bitch")  # take evasive action
+            self.place_bomb()
+            sm.bombToDodge()
+
+        if(sm.current_state == BombermanSM.dodge):
+            # check if a bomb has been placed
             # Loop through delta x
             for dx in [-1, 1]:
                 # Avoid out-of-bound indexing
@@ -46,39 +76,8 @@ class TestCharacter(CharacterEntity):
                             if not wrld.wall_at(p.x + dx, p.y + dy):  # allow walls spots
                                 # make a list of moves or make a new world with each move?
                                 # coords.append(p.x + dx, p.y + dy)
-                                self.move(dx, dy) # take evasive action
-
-
-
-        goal = (wrld.exitcell[0], wrld.exitcell[1])  # this could be empty
-
-        # if wrld.monsters():  # no monsters in feild, so just A* it
-        path = self.Astar(wrld, (p.x, p.y), goal)  # traverse as linked list?
-        fpath = [goal]
-        print(fpath)
-        while not (p.x, p.y) in fpath:
-            fpath.append(path.get(fpath[-1]))
-        # get first move of path and make the move
-        fpath.reverse()
-        print(fpath)
-        #check path for problems
-        for cell in fpath:
-            if wrld.bomb_at(cell[0], cell[1]) or wrld.explosion_at(cell[0], cell[1]):
-                self.move(0, 0)
-
-
-
-        #otherwise make the move!!!!
-        move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
-        #print(fpath[1][0], fpath[1][1])
-
-        # check if position to move to is a wall
-        if (wrld.wall_at(fpath[1][0], fpath[1][1])):
-            print("Wall here bitch")  # take evasive action
-            self.place_bomb()
-
-
-        self.move(move[0], move[1])
+                                self.move(dx, dy)  # take evasive action
+                                #sm.dodgeToIdleBomb()
 
     def getDistanceTo(self, cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
@@ -100,7 +99,8 @@ class TestCharacter(CharacterEntity):
                             if allowWalls or not wrld.wall_at(startcoords[0] + dx,
                                                               startcoords[1] + dy):  # allow walls spots
                                 # make a list of moves or make a new world with each move?
-                                coords.append((startcoords[0] + dx, startcoords[1] + dy))
+                                coords.append(
+                                    (startcoords[0] + dx, startcoords[1] + dy))
                                 # Set move in wrld
                                 # entity.move(dx, dy)
                                 # Get new world
@@ -131,7 +131,8 @@ class TestCharacter(CharacterEntity):
                 if wrld.wall_at(next[0], next[1]):
                     wallcost += 100
 
-                new_cost = cost_so_far[current] + wallcost  # graph.cost(current, next) #change this to use bomb maybe
+                # graph.cost(current, next) #change this to use bomb maybe
+                new_cost = cost_so_far[current] + wallcost
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
                     priority = new_cost + self.getDistanceTo(next, goal)
@@ -142,18 +143,18 @@ class TestCharacter(CharacterEntity):
         print(came_from)
         print("Couldn't Plan Path to Goal")
 
-    # Getting expectimax
-    def expectimax(node, is_max):
-        # Condition for Terminal node
-        if (node.left == None and node.right == None):
-            return node.value;
+    # # Getting expectimax
+    # def expectimax(node, is_max):
+    #     # Condition for Terminal node
+    #     if (node.left == None and node.right == None):
+    #         return node.value
 
-        # Maximizer node. Chooses the max from the
-        # left and right sub-trees
-        if (is_max):
-            return max(expectimax(node.left, False), expectimax(node.right, False))
+    #     # Maximizer node. Chooses the max from the
+    #     # left and right sub-trees
+    #     if (is_max):
+    #         return max(expectimax(node.left, False), expectimax(node.right, False))
 
-        # Chance node. Returns the average of
-        # the left and right sub-trees
-        else:
-            return (expectimax(node.left, True) + expectimax(node.right, True)) / 2;
+    #     # Chance node. Returns the average of
+    #     # the left and right sub-trees
+    #     else:
+    #         return (expectimax(node.left, True) + expectimax(node.right, True)) / 2
