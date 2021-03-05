@@ -1,5 +1,6 @@
 # This is necessary to find the main code
 import sys
+from statemachine import StateMachine, State
 from queue import PriorityQueue
 
 sys.path.insert(0, '../bomberman')
@@ -8,12 +9,20 @@ from entity import CharacterEntity
 from colorama import Fore, Back
 
 
+class BombermanSM(StateMachine):
+    idle = State('idle', initial=True)
+    walk = State('walk')
+    bomb = State('bomb') 
+
+    # Idle is detection state
+    idleToWalk = idle.to(walk)
+    idleToBomb = idle.to(bomb)
+    bombToWalk = bomb.to(walk)
+    walkToIdle = walk.to(idle)
+
 class TestCharacter(CharacterEntity):
 
-    def __init__(self):
-        self.state = 1
-
-
+    sm = BombermanSM()
     def do(self, wrld):
         # scan whole board for any monsters or other players
         monsters = 0
@@ -70,7 +79,6 @@ class TestCharacter(CharacterEntity):
 
 
         self.move(move[0], move[1])
-        exit()
 
     def getDistanceTo(self, cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
