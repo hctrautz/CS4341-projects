@@ -73,12 +73,12 @@ class TestCharacter(CharacterEntity):
                     if danger:
                         # check new worlds for 3 layers in advance
                         depth = 2
-                        root = Node.newNode(wrld, [])
+                        root = Node.newNode(self, wrld, [])
                         root = Node.initExpectimax(self, depth, root, [])
                         #root.value.append(Node.initExpectimax(self, wrld, [], p, 2, root, []))
                         print(root)
                         # return move of best expectimax
-                        move = Node.expectimax(root, True)
+                        move = Node.expectimax(self, root, True)
                         print(move)
                         move = move[0][0][0]
                         print(move)
@@ -177,12 +177,12 @@ class Node:
         self.children = []
 
     # Initializing Nodes to None
-    def newNode(world, path):
-        temp = Node(world, path);
-        return temp;
+    def newNode(self, world, path):
+        temp = Node(world, path)
+        return temp
 
     # Getting expectimax
-    def expectimax(node, is_max):
+    def expectimax(self, node, is_max):
         # Condition for Terminal node
         if not node.children:  # if there is nothing in the child list
             return node.path, node.score
@@ -192,7 +192,7 @@ class Node:
             #print(node.children)
             expectichildren = []
             for c in node.children:
-                expectichildren.append(Node.expectimax(c, False))
+                expectichildren.append(Node.expectimax(self, c, False))
 
 
             #maxset = max(expectichildren, key = lambda i : i[1])[0]
@@ -204,7 +204,7 @@ class Node:
         else:
             totalSum = 0
             for child in node.children:
-                path, score = Node.expectimax(child, True)
+                path, score = Node.expectimax(self, child, True)
                 totalSum+=score
             return node.path, (totalSum / len(node.children))
 
@@ -262,7 +262,7 @@ class Node:
                                         (newWrld, events) = copywrld.next()  # get new world with moved entities
                                         newPath = deepcopy(root.path)
                                         newPath.append([(pdx, pdy)])
-                                        root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(newWrld, newPath), events))
+                                        root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
 
             return root # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
