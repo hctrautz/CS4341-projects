@@ -1,4 +1,6 @@
 # This is necessary to find the main code
+from copy import deepcopy
+
 from colorama import Fore, Back
 from entity import CharacterEntity
 from events import *
@@ -78,8 +80,9 @@ class TestCharacter(CharacterEntity):
                         move = Node.expectimax(root, True)
                         print(move)
                         move = move[0][0]
+                        print(move)
 
-                    print(move)
+                    #print(move)
                     self.move(move[0], move[1])  # execute move
 
         if sm.current_state == BombermanSM.bomb:
@@ -187,7 +190,7 @@ class Node:
     def expectimax(node, is_max):
         # Condition for Terminal node
         if not node.children: # if there is nothing in the child list
-            return node.score
+            return node.path, node.score
 
         # Maximizer node. Chooses the max from the children
         if (is_max):
@@ -195,12 +198,10 @@ class Node:
             expectichildren = []
             for c in node.children:
                 expectichildren.append(Node.expectimax(c, False))
-            #print(expectichildren)
-            #print(len(expectichildren))
+
+
             maxset = max(expectichildren, key = lambda i : i[1])[0]
-            #print(maxset)
-            #print("End")
-            #print(list(map(max, zip(*expectichildren))))
+            print(max(expectichildren, key = lambda i : i[1]))
             return maxset
 
         # Chance node. Returns the average of
@@ -259,9 +260,9 @@ class Node:
                                             i += 1
                                         # Get new world
                                         (newWrld, events) = copywrld.next()  # get new world with moved entities
-                                        root.path.append([(pdx, pdy)])
-
-                                        root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(newWrld, root.path), events))
+                                        newPath = deepcopy(root.path)
+                                        newPath.append([(pdx, pdy)])
+                                        root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(newWrld, newPath), events))
 
             return root # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
