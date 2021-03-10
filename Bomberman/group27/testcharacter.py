@@ -16,6 +16,7 @@ sys.path.insert(0, '../bomberman')
 
 
 # Import necessary stuff
+# Test
 
 class BombermanSM(StateMachine):
     walk = State('walk', initial=True)
