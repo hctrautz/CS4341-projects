@@ -76,7 +76,7 @@ class TestCharacter(CharacterEntity):
                         root = Node.newNode(wrld, [])
                         root = Node.initExpectimax(self, depth, root, [])
                         #root.value.append(Node.initExpectimax(self, wrld, [], p, 2, root, []))
-
+                        print(root)
                         # return move of best expectimax
                         move = Node.expectimax(root, True)
                         print(move)
@@ -216,19 +216,24 @@ class Node:
             possiblemonstermoves = dict()
             # print(copywrld.monsters.values())
             for m in copywrld.monsters.values():  # get closest monsters position
-                possiblemonstermoves[m[0]] = []  # create new entry for monster
-                for dx in [-1, 0, 1]:
-                    # Avoid out-of-bound indexing
-                    if (m[0].x + dx >= 0) and (m[0].x + dx < copywrld.width()):
-                        # Loop through delta y
-                        for dy in [-1, 0, 1]:
-                            # Make sure the monster is moving
-                            if (dx != 0) or (dy != 0):
-                                # Avoid out-of-bound indexing
-                                if (m[0].y + dy >= 0) and (m[0].y + dy < copywrld.height()):
-                                    # No need to check impossible moves
-                                    if not copywrld.wall_at(m[0].x + dx, m[0].y + dy):
-                                        possiblemonstermoves[m[0]].append((dx, dy))
+                xdistance = math.fabs(p.x - m[0].x)#check how far we are from monster
+                ydistance = math.fabs(p.y - m[0].y)
+                if xdistance > 4 or ydistance > 4:
+                    possiblemonstermoves[m[0]] = []  # create new entry for monster
+                    for dx in [-1, 0, 1]:
+                        # Avoid out-of-bound indexing
+                        if (m[0].x + dx >= 0) and (m[0].x + dx < copywrld.width()):
+                            # Loop through delta y
+                            for dy in [-1, 0, 1]:
+                                # Make sure the monster is moving
+                                if (dx != 0) or (dy != 0):
+                                    # Avoid out-of-bound indexing
+                                    if (m[0].y + dy >= 0) and (m[0].y + dy < copywrld.height()):
+                                        # No need to check impossible moves
+                                        if not copywrld.wall_at(m[0].x + dx, m[0].y + dy):
+                                            possiblemonstermoves[m[0]].append((dx, dy))
+                else:
+                    possiblemonstermoves[m[0]] = [(0,0)]  # if they are far away, just make them stationary
 
             # print(possiblemonstermoves)
             # args = tuple(possiblemonstermoves.values())
