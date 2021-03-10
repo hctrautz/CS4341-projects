@@ -80,7 +80,7 @@ class TestCharacter(CharacterEntity):
                         # return move of best expectimax
                         move = Node.expectimax(root, True)
                         print(move)
-                        move = move[0][0]
+                        move = move[0][0][0]
                         print(move)
 
                     #print(move)
@@ -112,30 +112,24 @@ class TestCharacter(CharacterEntity):
     def getDistanceTo(self, cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
 
-    def getPlayerNeighbors(self, startcoords, wrld, allowWalls):
+    def getPlayerNeighbors(self, startCoords, wrld, allowWalls):
         # Go through the possible 8-moves of the monster
         coords = []
         # Loop through delta x
         for dx in [-1, 0, 1]:
             # Avoid out-of-bound indexing
-            if (startcoords[0] + dx >= 0) and (startcoords[0] + dx < wrld.width()):
+            if (startCoords[0] + dx >= 0) and (startCoords[0] + dx < wrld.width()):
                 # Loop through delta y
                 for dy in [-1, 0, 1]:
                     # Make sure the monster is moving
                     if (dx != 0) or (dy != 0):
                         # Avoid out-of-bound indexing
-                        if (startcoords[1] + dy >= 0) and (startcoords[1] + dy < wrld.height()):
+                        if (startCoords[1] + dy >= 0) and (startCoords[1] + dy < wrld.height()):
                             # No need to check impossible moves
-                            if allowWalls or not wrld.wall_at(startcoords[0] + dx,
-                                                              startcoords[1] + dy):  # allow walls spots
+                            if allowWalls or not wrld.wall_at(startCoords[0] + dx, startCoords[1] + dy):  # allow walls spots
                                 # make a list of moves or make a new world with each move?
-                                coords.append(
-                                    (startcoords[0] + dx, startcoords[1] + dy))
-                                # Set move in wrld
-                                # entity.move(dx, dy)
-                                # Get new world
-                                # (newwrld, events) = wrld.next()
-                                # TODO: do something with newworld and events
+                                coords.append((startCoords[0] + dx, startCoords[1] + dy))
+
         return coords
 
     def Astar(self, wrld, start, goal):  # start and goal are (x,y) tuples
@@ -190,7 +184,7 @@ class Node:
     # Getting expectimax
     def expectimax(node, is_max):
         # Condition for Terminal node
-        if not node.children: # if there is nothing in the child list
+        if not node.children:  # if there is nothing in the child list
             return node.path, node.score
 
         # Maximizer node. Chooses the max from the children
@@ -201,9 +195,9 @@ class Node:
                 expectichildren.append(Node.expectimax(c, False))
 
 
-            maxset = max(expectichildren, key = lambda i : i[1])[0]
-            print(max(expectichildren, key = lambda i : i[1]))
-            return maxset
+            #maxset = max(expectichildren, key = lambda i : i[1])[0]
+            #print(max(expectichildren, key = lambda i : i[1]))
+            return max(expectichildren, key = lambda i : i[1])
 
         # Chance node. Returns the average of
         # the left and right sub-trees
@@ -292,9 +286,9 @@ class Node:
                 # print(xdistance)
                 # print(ydistance)
                 if xdistance <= 3:
-                    score -= 100 * xdistance
+                    score -= 100 * (3-xdistance)
                 if ydistance <= 3:
-                    score -= 100 * ydistance
+                    score -= 100 * (3-ydistance)
             #print(tuple((path, score)))
             root.score = tuple((root.path, score))
             return root
