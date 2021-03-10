@@ -1,4 +1,5 @@
 # This is necessary to find the main code
+import math
 from copy import deepcopy
 
 from colorama import Fore, Back
@@ -275,7 +276,7 @@ class Node:
                 elif e.tpe == Event.BOMB_HIT_CHARACTER:
                     score -= 1000
                 elif e.tpe == Event.BOMB_HIT_MONSTER:
-                    score + - 100
+                    score -= 100
                 elif e.tpe == Event.BOMB_HIT_WALL:
                     score += 50
 
@@ -283,12 +284,17 @@ class Node:
 
             goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
             calcpath = self.Astar(root.world, (p.x, p.y), goal)
-            score -= 2 * len(calcpath)  # penalize for longer paths
+            score -= 1 * len(calcpath)  # penalize for longer paths
 
             for m in root.world.monsters.values():  # check how far we are from each monster
-                distance = p.x - m[0].x + p.y - m[0].y
-                if distance < 3:
-                    score -= 2 * distance
+                xdistance = math.fabs(p.x - m[0].x)
+                ydistance = math.fabs(p.y - m[0].y)
+                # print(xdistance)
+                # print(ydistance)
+                if xdistance <= 3:
+                    score -= 100 * xdistance
+                if ydistance <= 3:
+                    score -= 100 * ydistance
             #print(tuple((path, score)))
             root.score = tuple((root.path, score))
             return root
