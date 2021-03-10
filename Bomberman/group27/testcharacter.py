@@ -193,10 +193,9 @@ class Node:
             expectichildren = []
             for c in node.children:
                 expectichildren.append(Node.expectimax(c, False))
-
-
+            print(expectichildren)
             #maxset = max(expectichildren, key = lambda i : i[1])[0]
-            #print(max(expectichildren, key = lambda i : i[1]))
+            print(max(expectichildren, key = lambda i : i[1]))
             return max(expectichildren, key = lambda i : i[1])
 
         # Chance node. Returns the average of
@@ -205,6 +204,8 @@ class Node:
             totalSum = 0
             for child in node.children:
                 path, score = Node.expectimax(child, True)
+                print("DOES THIS RUN")
+                print(score)
                 totalSum+=score
             return node.path, (totalSum / len(node.children))
 
