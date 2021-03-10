@@ -26,9 +26,6 @@ class AlphaBetaAgent(agent.Agent):
     def go(self, brd):
         """Search for the best move (choice of column for the token)"""
         # Your code here
-        next = self.get_successors(self,brd)
-
-
 
     # Get the successors of the given board.
     #
