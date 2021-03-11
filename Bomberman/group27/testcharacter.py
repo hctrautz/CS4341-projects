@@ -54,6 +54,12 @@ class TestCharacter(CharacterEntity):
 
                 if wrld.wall_at(fpath[1][0], fpath[1][1]):
                     sm.walkToBomb()
+                
+                #bomb if exit below you
+                # dist = abs(p.x - wrld.exitcell[0])
+                # if dist < 3: sm.walkToBomb()
+                
+
                 else:
                     scanRange = 3  # maybe change to 4 and use expectimax more
                     # we are attempting to move towards goal, check if we would be within range of monster
@@ -109,6 +115,8 @@ class TestCharacter(CharacterEntity):
                                 # coords.append(p.x + dx, p.y + dy)
                                 self.move(dx, dy)  # take evasive action
                                 # sm.dodgeToIdleBomb()
+
+        #if sm.current_state == BombermanSM.idleBomb:
 
     @staticmethod
     def getDistanceTo( cur, goal):
