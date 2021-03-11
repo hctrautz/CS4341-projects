@@ -67,6 +67,8 @@ class TestCharacter(CharacterEntity):
                                     # Is a monster at this position?
                                     if wrld.monsters_at(p.x + dx, p.y + dy):
                                         danger = True
+                                        # dist = abs(p.x - p.x + dx) + abs(p.y - p.y + dy)
+                                        # if dist <= 2: sm.walkToBomb()
                                         # we gotta bolt, would be detected
                                         # call expectimax to find our best move
 
@@ -75,13 +77,12 @@ class TestCharacter(CharacterEntity):
                         depth = 3
                         root = Node.newNode(self, wrld, [])
                         root = Node.initExpectimax(self, depth, root, [])
-                        #root.value.append(Node.initExpectimax(self, wrld, [], p, 2, root, []))
-                        #print(root)
+
                         # return move of best expectimax
                         move = Node.expectimax(self, root, True)
-                        #print(move)
+
                         move = move[0][0][0]
-                        #print(move)
+
 
                     #print(move)
                     self.move(move[0], move[1])  # execute move
@@ -109,10 +110,12 @@ class TestCharacter(CharacterEntity):
                                 self.move(dx, dy)  # take evasive action
                                 # sm.dodgeToIdleBomb()
 
-    def getDistanceTo(self, cur, goal):
+    @staticmethod
+    def getDistanceTo( cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
 
-    def getPlayerNeighbors(self, startCoords, wrld, allowWalls):
+    @staticmethod
+    def getPlayerNeighbors( startCoords, wrld, allowWalls):
         # Go through the possible 8-moves of the monster
         coords = []
         # Loop through delta x
@@ -132,7 +135,8 @@ class TestCharacter(CharacterEntity):
 
         return coords
 
-    def Astar(self, wrld, start, goal):  # start and goal are (x,y) tuples
+    @staticmethod
+    def Astar(wrld, start, goal):  # start and goal are (x,y) tuples
         frontier = PriorityQueue()
         frontier.put(start, 0)
         came_from = dict()
@@ -147,9 +151,9 @@ class TestCharacter(CharacterEntity):
                 # print(came_from)
                 return came_from
 
-            for next in self.getPlayerNeighbors(current, wrld, True):
+            for next in TestCharacter.getPlayerNeighbors(current, wrld, True):
 
-                self.set_cell_color(next[0], next[1], Fore.CYAN)
+                #self.set_cell_color(next[0], next[1], Fore.CYAN)
                 wallcost = 1
 
                 if wrld.wall_at(next[0], next[1]):
@@ -159,9 +163,9 @@ class TestCharacter(CharacterEntity):
                 new_cost = cost_so_far[current] + wallcost
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
-                    priority = new_cost + self.getDistanceTo(next, goal)
+                    priority = new_cost + TestCharacter.getDistanceTo(next, goal)
                     frontier.put(next, priority)
-                    self.set_cell_color(next[0], next[1], Fore.MAGENTA)
+                    #self.set_cell_color(next[0], next[1], Fore.MAGENTA)
                     came_from[next] = current
 
         # print(came_from)
@@ -185,18 +189,20 @@ class Node:
     def expectimax(self, node, is_max):
         # Condition for Terminal node
         if not node.children:  # if there is nothing in the child list
-            return node.path, node.score
+            return  node.score
 
         # Maximizer node. Chooses the max from the children
         if (is_max):
             #print(node.children)
             expectichildren = []
             for c in node.children:
-                expectichildren.append(Node.expectimax(self, c, False))
+                boi = Node.expectimax(self, c, False)
 
+                expectichildren.append(boi)
 
+            print(expectichildren)
             #maxset = max(expectichildren, key = lambda i : i[1])[0]
-            #print(max(expectichildren, key = lambda i : i[1]))
+            print(max(expectichildren, key = lambda i : i[1]))
             return max(expectichildren, key = lambda i : i[1])
 
         # Chance node. Returns the average of
@@ -204,26 +210,27 @@ class Node:
         else:
             totalSum = 0
             for child in node.children:
-                path, score = Node.expectimax(self, child, True)
+                score = Node.expectimax(self, child, True)
                 totalSum+=score[1]
             return node.path, (totalSum / len(node.children))
 
     def initExpectimax(self, depth, root, events):
         p = root.world.me(self)
-        if p is None:
-            root.score = tuple((root.path, -1000))
-            return root
+        # if p is None:
+        #     root.score = tuple((root.path, -1000))
+        #     root.children = []
+        #     return root
         if depth != 1:  # if this isnt the bottom level, create list of children
             copywrld = SensedWorld.from_world(root.world)
             # calculate all monster money moves
             possiblemonstermoves = dict()
-            # print(copywrld.monsters.values())
+
             for m in copywrld.monsters.values():  # get closest monsters position
                 #print(m)
                 # xdistance = math.fabs(p.x - m[0].x)#check how far we are from monster
                 # ydistance = math.fabs(p.y - m[0].y)
                 #distance = math.sqrt((p.x - m[0].x)**2+ (p.y - m[0].y)**2)
-                calcpath = self.Astar(root.world, (p.x, p.y), (m[0].x,m[0].y))
+                calcpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x,m[0].y))
                 fpath = [(m[0].x,m[0].y)]
                 while not (p.x, p.y) in fpath:
                     fpath.append(calcpath.get(fpath[-1]))
@@ -245,7 +252,7 @@ class Node:
                 else:
                     possiblemonstermoves[m[0]] = [(0,0)]  # if they are far away, just make them stationary
 
-            # print(possiblemonstermoves)
+
             # args = tuple(possiblemonstermoves.values())
             bigboi = list(itertools.product(*possiblemonstermoves.values()))
 
@@ -260,7 +267,7 @@ class Node:
                             if (p.y + pdy >= 0) and (p.y + pdy < copywrld.height()):
                                 # No need to check impossible moves
                                 if not copywrld.wall_at(p.x + pdx, p.y + pdy):  #####
-                                    self.move(pdx, pdy)  # apply player move
+                                    CharacterEntity.move(self,pdx, pdy)  # apply player move
                                     # now apply all different monster moves
                                     for mo in bigboi:
                                         i = 0
@@ -270,16 +277,27 @@ class Node:
                                             i += 1
                                         # Get new world
                                         (newWrld, events) = copywrld.next()  # get new world with moved entities
-                                        newPath = deepcopy(root.path)
-                                        newPath.append([(pdx, pdy)])
-                                        root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
+                                        death = False
+                                        for e in events:
+                                            if e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
+                                                death = True
+                                                newPath = deepcopy(root.path)
+                                                newPath.append([(pdx, pdy)])
+                                                badNode = Node.newNode(self, newWrld, [])
+                                                badNode.score = tuple((newPath,0))
+                                                root.children.append(badNode)
+
+                                        if not death:
+                                            newPath = deepcopy(root.path)
+                                            newPath.append([(pdx, pdy)])
+                                            root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
 
             return root # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
-            score = 0
+            score = 10000
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
-                    score += 100
+                    score += 1000
                 elif e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
                     score -= 1000
                     root.score = tuple((root.path, score))
@@ -294,32 +312,47 @@ class Node:
                     score += 50
 
             goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
-            #print((p.x, p.y))
-            calcpath = self.Astar(root.world, (p.x, p.y), goal)
+
+            calcpath = TestCharacter.Astar(root.world, (p.x, p.y), goal)
+
             fpath = [goal]
             while not (p.x, p.y) in fpath:
                 fpath.append(calcpath.get(fpath[-1]))
             fpath.reverse()
-            #print(fpath)
-            score -= 1 * len(fpath)  # penalize for longer paths
+            print(fpath)
+            #print(len(fpath))
+            score -= 9 * len(fpath)  # penalize for longer paths
+            print(root.path[0])
+            if root.path[0][0][0] == 1:
+                score += 9
+
+            if root.path[0][0][1] == 1:
+                score += 9
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
-                    scanRange = 1
+                    scanRange = 2
                 elif m[0].name == "aggressive":
                     scanRange = 3
                 elif m[0].name == "selfpreserving":
                     scanRange = 2
 
-                xdistance = math.fabs(p.x - m[0].x)
-                ydistance = math.fabs(p.y - m[0].y)
-                # print(xdistance)
-                # print(ydistance)
-                if xdistance <= scanRange:
-                    score -= 10 * (scanRange-xdistance)
-                if ydistance <= scanRange:
-                    score -= 10 * (scanRange-ydistance)
+                # xdistance = math.fabs(p.x - m[0].x)
+                # ydistance = math.fabs(p.y - m[0].y)
+                #
+                # if xdistance <= scanRange:
+                #     score -= 10 * (scanRange-xdistance)
+                # if ydistance <= scanRange:
+                #     score -= 10 * (scanRange-ydistance)
 
-            #print(tuple((path, score)))
+                monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
+                mpath = [(m[0].x, m[0].y)]
+                while not (p.x, p.y) in mpath:
+                    mpath.append(monsterpath.get(mpath[-1]))
+                mpath.reverse()
+                if len(mpath) < scanRange:
+                    score -= 10**(len(mpath))
+
+
             root.score = tuple((root.path, score))
             return root
