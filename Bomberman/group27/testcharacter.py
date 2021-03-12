@@ -55,7 +55,15 @@ class TestCharacter(CharacterEntity):
                 if wrld.wall_at(fpath[1][0], fpath[1][1]):
                     sm.walkToBomb()
                 else:
-                    scanRange = 3  # maybe change to 4 and use expectimax more
+                    scanRange = 1
+                    for m in wrld.monsters.values():  # check how far we are from each monster
+                        if m[0].name == "stupid":
+                            scanRange = 2
+                        if m[0].name == "aggressive":
+                            scanRange = 4
+                        if m[0].name == "selfpreserving":
+                            scanRange = 3
+                      # maybe change to 4 and use expectimax more
                     # we are attempting to move towards goal, check if we would be within range of monster
                     danger = False
                     for dx in range(-scanRange, scanRange + 1):
@@ -83,7 +91,13 @@ class TestCharacter(CharacterEntity):
 
                         move = move[0][0][0]
 
-
+                    if not danger:
+                        path = self.Astar(wrld, (p.x, p.y), goal)
+                        fpath = [goal]
+                        while not (p.x, p.y) in fpath:
+                            fpath.append(path.get(fpath[-1]))
+                        fpath.reverse()
+                        move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
                     #print(move)
                     self.move(move[0], move[1])  # execute move
 
@@ -193,6 +207,7 @@ class Node:
 
         # Maximizer node. Chooses the max from the children
         if (is_max):
+            #print(node.children)
             expectichildren = []
             for c in node.children:
                 boi = Node.expectimax(self, c, False)
@@ -214,8 +229,7 @@ class Node:
             return node.path, (totalSum / len(node.children))
 
     def initExpectimax(self, depth, root, events):
-        p = next(iter(root.world.characters.values()))[0]
-        #print(p)
+        p = root.world.me(self)
         # if p is None:
         #     root.score = tuple((root.path, -1000))
         #     root.children = []
@@ -226,20 +240,16 @@ class Node:
             possiblemonstermoves = dict()
 
             for m in copywrld.monsters.values():  # get closest monsters position
-                scanRange = 0
-                if m[0].name == "stupid":
-                    scanRange = 2
-                elif m[0].name == "aggressive":
-                    scanRange = 3
-                elif m[0].name == "selfpreserving":
-                    scanRange = 2
-
+                #print(m)
+                # xdistance = math.fabs(p.x - m[0].x)#check how far we are from monster
+                # ydistance = math.fabs(p.y - m[0].y)
+                #distance = math.sqrt((p.x - m[0].x)**2+ (p.y - m[0].y)**2)
                 calcpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x,m[0].y))
                 fpath = [(m[0].x,m[0].y)]
                 while not (p.x, p.y) in fpath:
                     fpath.append(calcpath.get(fpath[-1]))
                 fpath.reverse()
-                if len(fpath) <= scanRange:
+                if len(fpath) < 4:
                     possiblemonstermoves[m[0]] = []  # create new entry for monster
                     for dx in [-1, 0, 1]:
                         # Avoid out-of-bound indexing
@@ -305,7 +315,7 @@ class Node:
 
             return root # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
-            score = 0
+            score = 10000
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
                     score += 1000
@@ -323,7 +333,7 @@ class Node:
                     score += 50
 
             goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
-            #print((p.x, p.y))
+
             calcpath = TestCharacter.Astar(root.world, (p.x, p.y), goal)
 
             fpath = [goal]
@@ -331,17 +341,31 @@ class Node:
                 fpath.append(calcpath.get(fpath[-1]))
             fpath.reverse()
             print(fpath)
-            #print(len(fpath))
-            score -= 2 * len(fpath)  # penalize for longer paths
+            print(len(fpath))
+            score -= 10 * len(fpath)  # penalize for longer paths
+            print(root.path[0])
+            if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
+                score += 8
 
-            scanRange = 0
+            if root.path[0][0][0] == 0:
+                score += 3
+
+            if root.path[0][0][1] == -1:
+                score -= 5
+
+            if root.path[0][0][1] == 0:
+                score += 3
+
+            if root.path[0][0][1] == 1:
+                score += 9
+
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
                     scanRange = 2
                 elif m[0].name == "aggressive":
-                    scanRange = 3
+                    scanRange = 4
                 elif m[0].name == "selfpreserving":
-                    scanRange = 2
+                    scanRange = 3
 
                 # xdistance = math.fabs(p.x - m[0].x)
                 # ydistance = math.fabs(p.y - m[0].y)
@@ -356,8 +380,8 @@ class Node:
                 while not (p.x, p.y) in mpath:
                     mpath.append(monsterpath.get(mpath[-1]))
                 mpath.reverse()
-                if len(mpath) <= scanRange:
-                    score -= 0 * (scanRange - len(mpath))
+                if len(mpath) < scanRange:
+                    score -= 10**len(mpath)
 
 
             root.score = tuple((root.path, score))
