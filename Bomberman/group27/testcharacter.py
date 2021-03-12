@@ -91,13 +91,13 @@ class TestCharacter(CharacterEntity):
 
                         move = move[0][0][0]
 
-                    if not danger:
-                        path = self.Astar(wrld, (p.x, p.y), goal)
-                        fpath = [goal]
-                        while not (p.x, p.y) in fpath:
-                            fpath.append(path.get(fpath[-1]))
-                        fpath.reverse()
-                        move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
+                    # if not danger:
+                    #     path = self.Astar(wrld, (p.x, p.y), goal)
+                    #     fpath = [goal]
+                    #     while not (p.x, p.y) in fpath:
+                    #         fpath.append(path.get(fpath[-1]))
+                    #     fpath.reverse()
+                    #     move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
                     #print(move)
                     self.move(move[0], move[1])  # execute move
 
