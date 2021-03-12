@@ -193,7 +193,6 @@ class Node:
 
         # Maximizer node. Chooses the max from the children
         if (is_max):
-            #print(node.children)
             expectichildren = []
             for c in node.children:
                 boi = Node.expectimax(self, c, False)
@@ -215,7 +214,8 @@ class Node:
             return node.path, (totalSum / len(node.children))
 
     def initExpectimax(self, depth, root, events):
-        p = root.world.me(self)
+        p = next(iter(root.world.characters.values()))[0]
+        #print(p)
         # if p is None:
         #     root.score = tuple((root.path, -1000))
         #     root.children = []
@@ -226,16 +226,20 @@ class Node:
             possiblemonstermoves = dict()
 
             for m in copywrld.monsters.values():  # get closest monsters position
-                #print(m)
-                # xdistance = math.fabs(p.x - m[0].x)#check how far we are from monster
-                # ydistance = math.fabs(p.y - m[0].y)
-                #distance = math.sqrt((p.x - m[0].x)**2+ (p.y - m[0].y)**2)
+                scanRange = 0
+                if m[0].name == "stupid":
+                    scanRange = 2
+                elif m[0].name == "aggressive":
+                    scanRange = 3
+                elif m[0].name == "selfpreserving":
+                    scanRange = 2
+
                 calcpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x,m[0].y))
                 fpath = [(m[0].x,m[0].y)]
                 while not (p.x, p.y) in fpath:
                     fpath.append(calcpath.get(fpath[-1]))
                 fpath.reverse()
-                if len(fpath) < 4:
+                if len(fpath) <= scanRange:
                     possiblemonstermoves[m[0]] = []  # create new entry for monster
                     for dx in [-1, 0, 1]:
                         # Avoid out-of-bound indexing
@@ -266,9 +270,16 @@ class Node:
                             # Avoid out-of-bound indexing
                             if (p.y + pdy >= 0) and (p.y + pdy < copywrld.height()):
                                 # No need to check impossible moves
+
                                 if not copywrld.wall_at(p.x + pdx, p.y + pdy):  #####
-                                    CharacterEntity.move(self,pdx, pdy)  # apply player move
+                                    #self.move(pdx,pdy)
+                                    copywrld.me(p).move(pdx, pdy)
+                                    #p.move(0, 0)  # apply player move
                                     # now apply all different monster moves
+
+                                    newPath = deepcopy(root.path)
+                                    newPath.append([(pdx, pdy)])
+                                    newNode = Node.newNode(self, root.world, newPath)
                                     for mo in bigboi:
                                         i = 0
                                         for m in copywrld.monsters.values():
@@ -280,21 +291,21 @@ class Node:
                                         death = False
                                         for e in events:
                                             if e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
+                                                print("we died in the future")
                                                 death = True
                                                 newPath = deepcopy(root.path)
                                                 newPath.append([(pdx, pdy)])
                                                 badNode = Node.newNode(self, newWrld, [])
                                                 badNode.score = tuple((newPath,0))
-                                                root.children.append(badNode)
+                                                newNode.children.append(badNode)
 
                                         if not death:
-                                            newPath = deepcopy(root.path)
-                                            newPath.append([(pdx, pdy)])
-                                            root.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
+                                            newNode.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
+                                    root.children.append(newNode)
 
             return root # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
-            score = 10000
+            score = 0
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
                     score += 1000
@@ -312,7 +323,7 @@ class Node:
                     score += 50
 
             goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
-
+            #print((p.x, p.y))
             calcpath = TestCharacter.Astar(root.world, (p.x, p.y), goal)
 
             fpath = [goal]
@@ -321,14 +332,9 @@ class Node:
             fpath.reverse()
             print(fpath)
             #print(len(fpath))
-            score -= 9 * len(fpath)  # penalize for longer paths
-            print(root.path[0])
-            if root.path[0][0][0] == 1:
-                score += 9
+            score -= 2 * len(fpath)  # penalize for longer paths
 
-            if root.path[0][0][1] == 1:
-                score += 9
-
+            scanRange = 0
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
                     scanRange = 2
@@ -350,8 +356,8 @@ class Node:
                 while not (p.x, p.y) in mpath:
                     mpath.append(monsterpath.get(mpath[-1]))
                 mpath.reverse()
-                if len(mpath) < scanRange:
-                    score -= 10**(len(mpath))
+                if len(mpath) <= scanRange:
+                    score -= 0 * (scanRange - len(mpath))
 
 
             root.score = tuple((root.path, score))
