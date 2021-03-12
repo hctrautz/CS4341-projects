@@ -214,9 +214,9 @@ class Node:
 
                 expectichildren.append(boi)
 
-            print(expectichildren)
+            #print(expectichildren)
             #maxset = max(expectichildren, key = lambda i : i[1])[0]
-            print(max(expectichildren, key = lambda i : i[1]))
+            #print(max(expectichildren, key = lambda i : i[1]))
             return max(expectichildren, key = lambda i : i[1])
 
         # Chance node. Returns the average of
@@ -340,24 +340,24 @@ class Node:
             while not (p.x, p.y) in fpath:
                 fpath.append(calcpath.get(fpath[-1]))
             fpath.reverse()
-            print(fpath)
-            print(len(fpath))
-            score -= 10 * len(fpath)  # penalize for longer paths
-            print(root.path[0])
-            if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
-                score += 8
-
-            if root.path[0][0][0] == 0:
-                score += 3
-
-            if root.path[0][0][1] == -1:
-                score -= 5
-
-            if root.path[0][0][1] == 0:
-                score += 3
-
-            if root.path[0][0][1] == 1:
-                score += 9
+            #print(fpath)
+            #print(len(fpath))
+            score -= 5 * len(fpath)  # penalize for longer paths
+            #print(root.path[0])
+            # if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
+            #     score += 8
+            #
+            # if root.path[0][0][0] == 0:
+            #     score += 3
+            #
+            # if root.path[0][0][1] == -1:
+            #     score -= 5
+            #
+            # if root.path[0][0][1] == 0:
+            #     score += 3
+            #
+            # if root.path[0][0][1] == 1:
+            #     score += 9
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
@@ -381,7 +381,7 @@ class Node:
                     mpath.append(monsterpath.get(mpath[-1]))
                 mpath.reverse()
                 if len(mpath) < scanRange:
-                    score -= 10**len(mpath)
+                    score -= 10* (scanRange - len(mpath))
 
 
             root.score = tuple((root.path, score))
