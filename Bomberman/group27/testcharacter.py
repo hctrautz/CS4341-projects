@@ -55,7 +55,15 @@ class TestCharacter(CharacterEntity):
                 if wrld.wall_at(fpath[1][0], fpath[1][1]):
                     sm.walkToBomb()
                 else:
-                    scanRange = 3  # maybe change to 4 and use expectimax more
+                    scanRange = 1
+                    for m in wrld.monsters.values():  # check how far we are from each monster
+                        if m[0].name == "stupid":
+                            scanRange = 2
+                        if m[0].name == "aggressive":
+                            scanRange = 4
+                        if m[0].name == "selfpreserving":
+                            scanRange = 3
+                      # maybe change to 4 and use expectimax more
                     # we are attempting to move towards goal, check if we would be within range of monster
                     danger = False
                     for dx in range(-scanRange, scanRange + 1):
@@ -83,7 +91,13 @@ class TestCharacter(CharacterEntity):
 
                         move = move[0][0][0]
 
-
+                    if not danger:
+                        path = self.Astar(wrld, (p.x, p.y), goal)
+                        fpath = [goal]
+                        while not (p.x, p.y) in fpath:
+                            fpath.append(path.get(fpath[-1]))
+                        fpath.reverse()
+                        move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
                     #print(move)
                     self.move(move[0], move[1])  # execute move
 
@@ -153,14 +167,14 @@ class TestCharacter(CharacterEntity):
 
             for next in TestCharacter.getPlayerNeighbors(current, wrld, True):
 
-                #self.set_cell_color(next[0], next[1], Fore.CYAN)
-                wallcost = 1
+                # self.set_cell_color(next[0], next[1], Fore.CYAN)
+                # wallcost = 1
 
-                if wrld.wall_at(next[0], next[1]):
-                    wallcost += 100
+                # if wrld.wall_at(next[0], next[1]):
+                #     wallcost += 5
 
-                # graph.cost(current, next) #change this to use bomb maybe
-                new_cost = cost_so_far[current] + wallcost
+                # # graph.cost(current, next) #change this to use bomb maybe
+                new_cost = cost_so_far[current] #+ wallcost
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
                     priority = new_cost + TestCharacter.getDistanceTo(next, goal)
@@ -212,10 +226,10 @@ class Node:
             for child in node.children:
                 score = Node.expectimax(self, child, True)
                 totalSum+=score[1]
-            return node.path, (totalSum / len(node.children))
+            return node.path, (totalSum // len(node.children))
 
     def initExpectimax(self, depth, root, events):
-        p = root.world.me(self)
+        p = next(iter(root.world.characters.values()))[0]
         # if p is None:
         #     root.score = tuple((root.path, -1000))
         #     root.children = []
@@ -320,22 +334,31 @@ class Node:
                 fpath.append(calcpath.get(fpath[-1]))
             fpath.reverse()
             print(fpath)
-            #print(len(fpath))
-            score -= 9 * len(fpath)  # penalize for longer paths
+            print(len(fpath))
+            score -= 10 * len(fpath)  # penalize for longer paths
             print(root.path[0])
-            if root.path[0][0][0] == 1:
-                score += 9
+            if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
+                score += 8
+
+            if root.path[0][0][0] == 0:
+                score += 3
+            
+            if root.path[0][0][1] == -1:
+                score -= 5
+
+            if root.path[0][0][1] == 0:
+                score += 3
 
             if root.path[0][0][1] == 1:
-                score += 9
+                score += 100
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
                     scanRange = 2
                 elif m[0].name == "aggressive":
-                    scanRange = 3
+                    scanRange = 4
                 elif m[0].name == "selfpreserving":
-                    scanRange = 2
+                    scanRange = 3
 
                 # xdistance = math.fabs(p.x - m[0].x)
                 # ydistance = math.fabs(p.y - m[0].y)
@@ -351,7 +374,7 @@ class Node:
                     mpath.append(monsterpath.get(mpath[-1]))
                 mpath.reverse()
                 if len(mpath) < scanRange:
-                    score -= 10**(len(mpath))
+                    score -= 10**len(mpath)
 
 
             root.score = tuple((root.path, score))
