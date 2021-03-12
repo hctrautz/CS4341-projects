@@ -167,14 +167,14 @@ class TestCharacter(CharacterEntity):
 
             for next in TestCharacter.getPlayerNeighbors(current, wrld, True):
 
-                # self.set_cell_color(next[0], next[1], Fore.CYAN)
-                # wallcost = 1
+                #self.set_cell_color(next[0], next[1], Fore.CYAN)
+                wallcost = 1
 
-                # if wrld.wall_at(next[0], next[1]):
-                #     wallcost += 5
+                if wrld.wall_at(next[0], next[1]):
+                    wallcost += 100
 
-                # # graph.cost(current, next) #change this to use bomb maybe
-                new_cost = cost_so_far[current] #+ wallcost
+                # graph.cost(current, next) #change this to use bomb maybe
+                new_cost = cost_so_far[current] + wallcost
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
                     priority = new_cost + TestCharacter.getDistanceTo(next, goal)
