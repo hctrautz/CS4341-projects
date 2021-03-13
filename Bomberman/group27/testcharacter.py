@@ -192,9 +192,9 @@ class TestCharacter(CharacterEntity):
 
                 bombcost = 1
                 if wrld.bomb_at(next[0], next[1]):
-                    bombcost += 200
+                    bombcost += 90
                 if wrld.explosion_at(next[0], next[1]):
-                    bombcost += 200
+                    bombcost += 90
 
 
                 # graph.cost(current, next) #change this to use bomb maybe
@@ -418,7 +418,12 @@ class Node:
                 monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
                 mpath = [(m[0].x, m[0].y)]
                 while not (p.x, p.y) in mpath:
-                    mpath.append(monsterpath.get(mpath[-1]))
+                    try:
+                        mpath.append(monsterpath.get(mpath[-1]))
+                    except:
+                        root.score = tuple((root.path, 1000))
+                        return root
+
                 mpath.reverse()
                 if len(mpath) <= scanRange:
                     score -= 100 * (scanRange - len(mpath))
