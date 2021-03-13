@@ -250,11 +250,19 @@ class Node:
     @staticmethod
     def initExpectimax(ent, depth, root, events):
         p = root.world.me(ent)
-        if p is None:
-            # newPath = deepcopy(root.path)
-            # badNode = Node.newNode(root.world, [])
-            # badNode.score = tuple((root.path, -1000))
+        print(len(root.world.characters.values()))
+        # if len(root.world.characters.values()) == 0:
+        #     # newPath = deepcopy(root.path)
+        #     # badNode = Node.newNode(root.world, [])
+        #     # badNode.score = tuple((root.path, -1000))
+        #     print("did we get here")
+        #     root.score = tuple((root.path, -1000))
+        #     return root
+        try:
+            p.x
+        except:
             root.score = tuple((root.path, -1000))
+            stuck = True
             return root
         if depth != 1:  # if this isnt the bottom level, create list of children
             # copywrld = SensedWorld.from_world(root.world)
@@ -271,8 +279,16 @@ class Node:
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
                 fpath = [(p.x, p.y)]
+                stuck = False
                 while not (m[0].x, m[0].y) in fpath:
-                    fpath.append(calcpath.get(fpath[-1]))
+                    if not stuck:
+                        try:
+                            fpath.append(calcpath.get(fpath[-1]))
+                        except:
+                            root.score = tuple((root.path, -1000))
+                            stuck = True
+                            return root
+
                 fpath.reverse()
 
                 if len(fpath) <= scanRange+1:

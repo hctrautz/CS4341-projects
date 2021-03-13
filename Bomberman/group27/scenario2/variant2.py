@@ -27,4 +27,4 @@ g.add_character(TestCharacter("me", # name
 ))
 
 # Run!
-g.go(3)
+g.go(50)
