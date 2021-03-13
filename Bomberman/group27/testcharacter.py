@@ -105,6 +105,7 @@ class TestCharacter(CharacterEntity):
         if sm.current_state == BombermanSM.bomb:
             # check if position to move to is a wall
             print("Wall here bitch")  # take evasive action
+            # TODO: Start Timer, make explosive cells movable until explosion_duration has elapsed 
             self.place_bomb()
             sm.bombToDodge()
 
