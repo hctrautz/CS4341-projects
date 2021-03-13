@@ -56,6 +56,7 @@ class TestCharacter(CharacterEntity):
                     sm.walkToBomb()
                 else:
                     scanRange = 1
+                    danger = False
                     for m in wrld.monsters.values():  # check how far we are from each monster
                         if m[0].name == "stupid":
                             scanRange = 2
@@ -63,33 +64,20 @@ class TestCharacter(CharacterEntity):
                             scanRange = 4
                         if m[0].name == "selfpreserving":
                             scanRange = 3
-                      # maybe change to 4 and use expectimax more
-                    # we are attempting to move towards goal, check if we would be within range of monster
-                    danger = False
-                    for dx in range(-scanRange, scanRange + 1):
-                        # Avoid out-of-bounds access
-                        if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
-                            for dy in range(-scanRange, scanRange + 1):
-                                # Avoid out-of-bounds access
-                                if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
-                                    # Is a monster at this position?
-                                    if wrld.monsters_at(p.x + dx, p.y + dy):
-                                        danger = True
-                                        # dist = abs(p.x - p.x + dx) + abs(p.y - p.y + dy)
-                                        # if dist <= 2: sm.walkToBomb()
-                                        # we gotta bolt, would be detected
-                                        # call expectimax to find our best move
+                        # we are attempting to move towards goal, check if we would be within range of monster
+                        if m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
+                            danger = True
 
                     if danger:
                         # check new worlds for 3 layers in advance
-                        depth = 3
-                        root = Node.newNode(self, wrld, [])
+                        depth = 4
+                        root = Node.newNode(SensedWorld.from_world(wrld), [])
                         root = Node.initExpectimax(self, depth, root, [])
 
                         # return move of best expectimax
-                        move = Node.expectimax(self, root, True)
-
-                        move = move[0][0][0]
+                        move = Node.expectimax(root, True)
+                        print(move)
+                        move = move[0]
 
                     if not danger:
                         path = self.Astar(wrld, (p.x, p.y), goal)
@@ -98,7 +86,7 @@ class TestCharacter(CharacterEntity):
                             fpath.append(path.get(fpath[-1]))
                         fpath.reverse()
                         move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
-                    #print(move)
+                    # print(move)
                     self.move(move[0], move[1])  # execute move
 
         if sm.current_state == BombermanSM.bomb:
@@ -125,12 +113,12 @@ class TestCharacter(CharacterEntity):
                                 # sm.dodgeToIdleBomb()
 
     @staticmethod
-    def getDistanceTo( cur, goal):
+    def getDistanceTo(cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
 
     @staticmethod
-    def getPlayerNeighbors( startCoords, wrld, allowWalls):
-        # Go through the possible 8-moves of the monster
+    def getPlayerNeighbors(startCoords, wrld, allowWalls):
+        # Go through the possible 8-moves
         coords = []
         # Loop through delta x
         for dx in [-1, 0, 1]:
@@ -143,7 +131,8 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if (startCoords[1] + dy >= 0) and (startCoords[1] + dy < wrld.height()):
                             # No need to check impossible moves
-                            if allowWalls or not wrld.wall_at(startCoords[0] + dx, startCoords[1] + dy):  # allow walls spots
+                            if allowWalls or not wrld.wall_at(startCoords[0] + dx,
+                                                              startCoords[1] + dy):  # allow walls spots
                                 # make a list of moves or make a new world with each move?
                                 coords.append((startCoords[0] + dx, startCoords[1] + dy))
 
@@ -167,7 +156,6 @@ class TestCharacter(CharacterEntity):
 
             for next in TestCharacter.getPlayerNeighbors(current, wrld, True):
 
-                #self.set_cell_color(next[0], next[1], Fore.CYAN)
                 wallcost = 1
 
                 if wrld.wall_at(next[0], next[1]):
@@ -179,11 +167,8 @@ class TestCharacter(CharacterEntity):
                     cost_so_far[next] = new_cost
                     priority = new_cost + TestCharacter.getDistanceTo(next, goal)
                     frontier.put(next, priority)
-                    #self.set_cell_color(next[0], next[1], Fore.MAGENTA)
+                    # self.set_cell_color(next[0], next[1], Fore.MAGENTA)
                     came_from[next] = current
-
-        # print(came_from)
-        # print("Couldn't Plan Path to Goal")
 
 
 class Node:
@@ -195,127 +180,129 @@ class Node:
         self.children = []
 
     # Initializing Nodes to None
-    def newNode(self, world, path):
+    @staticmethod
+    def newNode(world, path):
         temp = Node(world, path)
         return temp
 
     # Getting expectimax
-    def expectimax(self, node, is_max):
+    @staticmethod
+    def expectimax(node, is_max):
         # Condition for Terminal node
         if not node.children:  # if there is nothing in the child list
-            return  node.score
+            return node.score
 
         # Maximizer node. Chooses the max from the children
-        if (is_max):
-            #print(node.children)
+        if is_max:
             expectichildren = []
             for c in node.children:
-                boi = Node.expectimax(self, c, False)
-
+                boi = Node.expectimax(c, False)
                 expectichildren.append(boi)
-
-            #print(expectichildren)
-            #maxset = max(expectichildren, key = lambda i : i[1])[0]
-            #print(max(expectichildren, key = lambda i : i[1]))
-            return max(expectichildren, key = lambda i : i[1])
+            # print(expectichildren)
+            # print(max(expectichildren, key=lambda i: i[1]))
+            return max(expectichildren, key=lambda i: i[1])
 
         # Chance node. Returns the average of
         # the left and right sub-trees
         else:
             totalSum = 0
             for child in node.children:
-                score = Node.expectimax(self, child, True)
-                totalSum+=score[1]
+                score = Node.expectimax(child, True)
+                totalSum += score[1]
             return node.path, (totalSum / len(node.children))
 
-    def initExpectimax(self, depth, root, events):
-        p = root.world.me(self)
-        # if p is None:
-        #     root.score = tuple((root.path, -1000))
-        #     root.children = []
-        #     return root
+    @staticmethod
+    def initExpectimax(ent, depth, root, events):
+        p = root.world.me(ent)
+        if p is None:
+            # newPath = deepcopy(root.path)
+            # badNode = Node.newNode(root.world, [])
+            # badNode.score = tuple((root.path, -1000))
+            root.score = tuple((root.path, -1000))
+            return root
         if depth != 1:  # if this isnt the bottom level, create list of children
-            copywrld = SensedWorld.from_world(root.world)
+            # copywrld = SensedWorld.from_world(root.world)
             # calculate all monster money moves
             possiblemonstermoves = dict()
 
-            for m in copywrld.monsters.values():  # get closest monsters position
-                #print(m)
-                # xdistance = math.fabs(p.x - m[0].x)#check how far we are from monster
-                # ydistance = math.fabs(p.y - m[0].y)
-                #distance = math.sqrt((p.x - m[0].x)**2+ (p.y - m[0].y)**2)
-                calcpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x,m[0].y))
-                fpath = [(m[0].x,m[0].y)]
-                while not (p.x, p.y) in fpath:
+            for m in root.world.monsters.values(): #loop through the monsters, and create moves for each
+                if m[0].name == "stupid":
+                    scanRange = 1
+                if m[0].name == "aggressive":
+                    scanRange = 3
+                if m[0].name == "selfpreserving":
+                    scanRange = 2
+
+                calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
+                fpath = [(p.x, p.y)]
+                while not (m[0].x, m[0].y) in fpath:
                     fpath.append(calcpath.get(fpath[-1]))
                 fpath.reverse()
-                if len(fpath) < 4:
-                    possiblemonstermoves[m[0]] = []  # create new entry for monster
-                    for dx in [-1, 0, 1]:
-                        # Avoid out-of-bound indexing
-                        if (m[0].x + dx >= 0) and (m[0].x + dx < copywrld.width()):
-                            # Loop through delta y
-                            for dy in [-1, 0, 1]:
-                                # Make sure the monster is moving
-                                if (dx != 0) or (dy != 0):
-                                    # Avoid out-of-bound indexing
-                                    if (m[0].y + dy >= 0) and (m[0].y + dy < copywrld.height()):
-                                        # No need to check impossible moves
-                                        if not copywrld.wall_at(m[0].x + dx, m[0].y + dy):
-                                            possiblemonstermoves[m[0]].append((dx, dy))
-                else:
-                    possiblemonstermoves[m[0]] = [(0,0)]  # if they are far away, just make them stationary
 
+                if len(fpath) <= scanRange+1:
+                    possiblemonstermoves[m[0]] = []  # create new entry for monster
+                    # for dx in [-1, 0, 1]:
+                    #     # Avoid out-of-bound indexing
+                    #     if (m[0].x + dx >= 0) and (m[0].x + dx < root.world.width()):
+                    #         # Loop through delta y
+                    #         for dy in [-1, 0, 1]:
+                    #             # Make sure the monster is moving
+                    #             if (dx != 0) or (dy != 0):
+                    #                 # Avoid out-of-bound indexing
+                    #                 if (m[0].y + dy >= 0) and (m[0].y + dy < root.world.height()):
+                    #                     # No need to check impossible moves
+                    #                     if not root.world.wall_at(m[0].x + dx, m[0].y + dy):
+                    #                         possiblemonstermoves[m[0]].append((dx, dy))
+
+                    for dx in range(-scanRange, scanRange + 1):
+                        # Avoid out-of-bounds access
+                        if (m[0].x + dx >= 0) and (m[0].x + dx < root.world.width()):
+                            for dy in range(-scanRange, scanRange + 1):
+                                # Avoid out-of-bounds access
+                                if (m[0].y + dy >= 0) and (m[0].y + dy < root.world.height()):
+                                    # Is a character at this position?
+                                    if root.world.characters_at(m[0].x + dx, m[0].y + dy):
+                                        possiblemonstermoves[m[0]].append((dx, dy))
+
+                else:
+                    possiblemonstermoves[m[0]] = [(0, 0)]  # if they are far away, just make them stationary
 
             # args = tuple(possiblemonstermoves.values())
             bigboi = list(itertools.product(*possiblemonstermoves.values()))
 
             for pdx in [-1, 0, 1]:  # check each possible player move
                 # Avoid out-of-bound indexing
-                if (p.x + pdx >= 0) and (p.x + pdx < copywrld.width()):
+                if (p.x + pdx >= 0) and (p.x + pdx < root.world.width()):
                     # Loop through delta y
                     for pdy in [-1, 0, 1]:
                         # Make sure the monster is moving
-                        if (pdx != 0) or (pdy != 0):
-                            # Avoid out-of-bound indexing
-                            if (p.y + pdy >= 0) and (p.y + pdy < copywrld.height()):
-                                # No need to check impossible moves
+                        # TODO Allow no moving
+                        # Avoid out-of-bound indexing
+                        if (p.y + pdy >= 0) and (p.y + pdy < root.world.height()):
+                            # No need to check impossible moves
 
-                                if not copywrld.wall_at(p.x + pdx, p.y + pdy):  #####
-                                    #self.move(pdx,pdy)
-                                    copywrld.me(p).move(pdx, pdy)
-                                    #p.move(0, 0)  # apply player move
-                                    # now apply all different monster moves
+                            if not root.world.wall_at(p.x + pdx, p.y + pdy):  #####
+                                root.world.me(p).move(pdx, pdy) #apply player move
+                                if not root.path:
+                                    newPath = (pdx, pdy)
+                                newNode = Node.newNode(SensedWorld.from_world(root.world), newPath)
 
-                                    newPath = deepcopy(root.path)
-                                    newPath.append([(pdx, pdy)])
-                                    newNode = Node.newNode(self, root.world, newPath)
-                                    for mo in bigboi:
-                                        i = 0
-                                        for m in copywrld.monsters.values():
-                                            # Set move in wrld
-                                            m[0].move(mo[i][0], mo[i][1])
-                                            i += 1
-                                        # Get new world
-                                        (newWrld, events) = copywrld.next()  # get new world with moved entities
-                                        death = False
-                                        for e in events:
-                                            if e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
-                                                print("we died in the future")
-                                                death = True
-                                                newPath = deepcopy(root.path)
-                                                newPath.append([(pdx, pdy)])
-                                                badNode = Node.newNode(self, newWrld, [])
-                                                badNode.score = tuple((newPath,0))
-                                                newNode.children.append(badNode)
+                                # now apply all different monster moves
+                                for mo in bigboi:
+                                    i = 0
+                                    for m in root.world.monsters.values():
+                                        # Set move in wrld
 
-                                        if not death:
-                                            newNode.children.append(Node.initExpectimax(self, depth - 1, Node.newNode(self, newWrld, newPath), events))
-                                    root.children.append(newNode)
+                                        m[0].move(mo[i][0], mo[i][1])
+                                        i += 1
+                                    # Get new world
+                                    (newWrld, events) = root.world.next()  # get new world with moved entities
+                                    newNode.children.append(Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path),events))
+                                root.children.append(newNode)
 
-            return root # TODO something, maybe copy world more
+            return root  # TODO something, maybe copy world more
         else:  # is bottom level, we need to evaluate each current level node
-            score = 10000
+            score = 0
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
                     score += 1000
@@ -333,17 +320,18 @@ class Node:
                     score += 50
 
             goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
-
             calcpath = TestCharacter.Astar(root.world, (p.x, p.y), goal)
 
             fpath = [goal]
             while not (p.x, p.y) in fpath:
                 fpath.append(calcpath.get(fpath[-1]))
             fpath.reverse()
-            #print(fpath)
-            #print(len(fpath))
             score -= 5 * len(fpath)  # penalize for longer paths
-            #print(root.path[0])
+
+            #give 1 point for every free space in the next world, this should discourage us from running into walls
+            score += 2 * len(TestCharacter.getPlayerNeighbors((p.x, p.y), root.world, False))
+
+            # print(root.path[0])
             # if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
             #     score += 8
             #
@@ -363,9 +351,9 @@ class Node:
                 if m[0].name == "stupid":
                     scanRange = 2
                 elif m[0].name == "aggressive":
-                    scanRange = 4
+                    scanRange = 6
                 elif m[0].name == "selfpreserving":
-                    scanRange = 3
+                    scanRange = 4
 
                 # xdistance = math.fabs(p.x - m[0].x)
                 # ydistance = math.fabs(p.y - m[0].y)
@@ -380,9 +368,8 @@ class Node:
                 while not (p.x, p.y) in mpath:
                     mpath.append(monsterpath.get(mpath[-1]))
                 mpath.reverse()
-                if len(mpath) < scanRange:
-                    score -= 10* (scanRange - len(mpath))
-
+                if len(mpath) <= scanRange:
+                    score -= 100 * (scanRange - len(mpath))
 
             root.score = tuple((root.path, score))
             return root
