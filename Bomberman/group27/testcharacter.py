@@ -51,6 +51,7 @@ class TestCharacter(CharacterEntity):
                         fpath.append(path.get(fpath[-1]))
                     except:
                         stuck = True
+                        #sm.walkToBomb()
                         self.move(0,0)
                         break
             if not stuck:
@@ -67,6 +68,21 @@ class TestCharacter(CharacterEntity):
 
                 if wrld.wall_at(fpath[1][0], fpath[1][1]) and len(b) == 0:
                     sm.walkToBomb()
+
+                if wrld.wall_at(p.x, p.y+1) and len(b) == 0 and sm.current_state == BombermanSM.walk:
+                    sm.walkToBomb()
+                
+                
+                for dx in range (1, wrld.width()):
+                    # Avoid out-of-bound indexing
+                    if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
+                    # Loop through delta y
+                        for dy in range (1, wrld.height()):
+                            # Avoid out-of-bound indexing
+                            if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
+                                if (wrld.exit_at(p.x, p.y + dy) or wrld.exit_at(p.x+1, p.y + dy) or wrld.exit_at(p.x+2, p.y + dy)) and wrld.wall_at(p.x, p.y+1):
+                                    if sm.current_state == BombermanSM.walk and len(b) == 0:
+                                        sm.walkToBomb()
                 else:
                     scanRange = 1
                     danger = False
@@ -78,8 +94,15 @@ class TestCharacter(CharacterEntity):
                         if m[0].name == "selfpreserving":
                             scanRange = 3
                         # we are attempting to move towards goal, check if we would be within range of monster
-                        if m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
+
+                        xdistance = math.fabs(p.x - m[0].x)
+                        ydistance = math.fabs(p.y - m[0].y)
+                        if ydistance < 3:
+                            if sm.current_state == BombermanSM.walk and len(b) == 0:
+                                sm.walkToBomb()
+                        elif m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
                             danger = True
+                        
 
                     if danger:
                         # check new worlds for 3 layers in advance
@@ -100,6 +123,7 @@ class TestCharacter(CharacterEntity):
                         # fpath.reverse()
                         move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
                     # print(move)
+                    
                     self.move(move[0], move[1])  # execute move
 
         if sm.current_state == BombermanSM.bomb:
@@ -190,12 +214,11 @@ class TestCharacter(CharacterEntity):
 
                 if wrld.wall_at(next[0], next[1]):
                     wallcost += 100
-
                 bombcost = 1
                 if wrld.bomb_at(next[0], next[1]):
-                    bombcost += 90
+                    bombcost += 200
                 if wrld.explosion_at(next[0], next[1]):
-                    bombcost += 90
+                    bombcost += 200
 
 
                 # graph.cost(current, next) #change this to use bomb maybe
@@ -358,7 +381,7 @@ class Node:
             score = 0
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
-                    score += 1000
+                    score += 5000
                 elif e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
                     score -= 1000
                     root.score = tuple((root.path, score))
@@ -384,6 +407,8 @@ class Node:
             #give 1 point for every free space in the next world, this should discourage us from running into walls
             score += 2 * len(TestCharacter.getPlayerNeighbors((p.x, p.y), root.world, False))
 
+            #score -= 2 * (root.world.exitcell[0] - p.x)
+
             # print(root.path[0])
             # if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
             #     score += 8
@@ -404,17 +429,20 @@ class Node:
                 if m[0].name == "stupid":
                     scanRange = 2
                 elif m[0].name == "aggressive":
-                    scanRange = 6
-                elif m[0].name == "selfpreserving":
                     scanRange = 4
+                elif m[0].name == "selfpreserving":
+                    scanRange = 3
 
                 # xdistance = math.fabs(p.x - m[0].x)
                 # ydistance = math.fabs(p.y - m[0].y)
-                #
-                # if xdistance <= scanRange:
-                #     score -= 10 * (scanRange-xdistance)
-                # if ydistance <= scanRange:
-                #     score -= 10 * (scanRange-ydistance)
+                
+                # if xdistance >= scanRange:
+                #     score += 10 * (scanRange-xdistance)
+                # if ydistance >= scanRange:
+                #     score += 10 * (scanRange-ydistance)
+
+                if m[0].y > p.y+1:
+                    score += 500
 
                 monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
                 mpath = [(m[0].x, m[0].y)]
@@ -427,7 +455,9 @@ class Node:
 
                 mpath.reverse()
                 if len(mpath) <= scanRange:
-                    score -= 100 * (scanRange - len(mpath))
+                    score -= 50 * (scanRange - len(mpath))
+                elif len(mpath) > scanRange:
+                    score += 50 * (len(mpath)-scanRange)
 
             root.score = tuple((root.path, score))
             return root
