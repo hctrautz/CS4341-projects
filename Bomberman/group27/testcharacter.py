@@ -69,18 +69,18 @@ class TestCharacter(CharacterEntity):
                 if wrld.wall_at(fpath[1][0], fpath[1][1]) and len(b) == 0:
                     sm.walkToBomb()
 
-                if wrld.wall_at(p.x, p.y+1) and len(b) == 0 and sm.current_state == BombermanSM.walk:
-                    sm.walkToBomb()
-                
-                
+                if (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())):
+                    if (wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y+1) or wrld.wall_at(p.x+1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
+                        sm.walkToBomb()
+                    
                 for dx in range (1, wrld.width()):
                     # Avoid out-of-bound indexing
                     if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
                     # Loop through delta y
                         for dy in range (1, wrld.height()):
                             # Avoid out-of-bound indexing
-                            if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
-                                if (wrld.exit_at(p.x, p.y + dy) or wrld.exit_at(p.x+1, p.y + dy) or wrld.exit_at(p.x+2, p.y + dy)) and wrld.wall_at(p.x, p.y+1):
+                            if  (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())) and (p.y + dy >= 0) and (p.y + dy < wrld.height()):
+                                if (wrld.exit_at(p.x, p.y + dy) or wrld.exit_at(p.x+1, p.y + dy)) and wrld.wall_at(p.x, p.y+1):
                                     if sm.current_state == BombermanSM.walk and len(b) == 0:
                                         sm.walkToBomb()
                 else:
@@ -94,9 +94,9 @@ class TestCharacter(CharacterEntity):
                         if m[0].name == "selfpreserving":
                             scanRange = 3
                         # we are attempting to move towards goal, check if we would be within range of monster
-
                         xdistance = math.fabs(p.x - m[0].x)
                         ydistance = math.fabs(p.y - m[0].y)
+
                         if ydistance < 3:
                             if sm.current_state == BombermanSM.walk and len(b) == 0:
                                 sm.walkToBomb()
@@ -295,7 +295,7 @@ class Node:
 
             for m in root.world.monsters.values(): #loop through the monsters, and create moves for each
                 if m[0].name == "stupid":
-                    scanRange = 1
+                    scanRange = 2
                 if m[0].name == "aggressive":
                     scanRange = 3
                 if m[0].name == "selfpreserving":
@@ -440,9 +440,8 @@ class Node:
                 #     score += 10 * (scanRange-xdistance)
                 # if ydistance >= scanRange:
                 #     score += 10 * (scanRange-ydistance)
-
-                if m[0].y > p.y+1:
-                    score += 500
+                if m[0].y < p.y:
+                    score += 15
 
                 monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
                 mpath = [(m[0].x, m[0].y)]
