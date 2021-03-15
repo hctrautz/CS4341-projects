@@ -14,7 +14,9 @@ from sensed_world import SensedWorld
 
 sys.path.insert(0, '../bomberman')
 
-
+#TODO 
+#TODO Improve dodging state enemy detection, he mostly just idles 
+#TODO 
 # Import necessary stuff
 
 class BombermanSM(StateMachine):
