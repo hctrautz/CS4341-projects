@@ -36,8 +36,7 @@ class TestCharacter(CharacterEntity):
     def do(self, wrld):
         b = wrld.bombs.values()
         e = wrld.explosions.values()
-        print(b)
-        print(e)
+
         p = wrld.me(self)  # get player location
         sm = BombermanSM()
 
@@ -71,9 +70,10 @@ class TestCharacter(CharacterEntity):
                 if wrld.wall_at(fpath[1][0], fpath[1][1]) and len(b) == 0:
                     sm.walkToBomb()
 
-                if (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())):
-                    if (wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y+1) or wrld.wall_at(p.x+1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
-                        sm.walkToBomb()
+                if len(wrld.monsters.values()) != 0:
+                    if (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())):
+                        if (wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y+1) or wrld.wall_at(p.x+1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
+                            sm.walkToBomb()
                     
                 for dx in range (1, wrld.width()):
                     # Avoid out-of-bound indexing
@@ -99,10 +99,10 @@ class TestCharacter(CharacterEntity):
                         xdistance = math.fabs(p.x - m[0].x)
                         ydistance = math.fabs(p.y - m[0].y)
 
-                        if ydistance < 3:
-                            if sm.current_state == BombermanSM.walk and len(b) == 0:
-                                sm.walkToBomb()
-                        elif m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
+                        # if ydistance < 3:
+                        #     if sm.current_state == BombermanSM.walk and len(b) == 0:
+                        #         sm.walkToBomb()
+                        if m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
                             danger = True
                         
 
@@ -114,7 +114,7 @@ class TestCharacter(CharacterEntity):
 
                         # return move of best expectimax
                         move = Node.expectimax(root, True)
-                        print(move)
+                        #print(move)
                         move = move[0]
 
                     if not danger:
@@ -130,7 +130,7 @@ class TestCharacter(CharacterEntity):
 
         if sm.current_state == BombermanSM.bomb:
             # check if position to move to is a wall
-            print("Wall here bitch")  # take evasive action
+            #print("Wall here bitch")  # take evasive action
             # TODO: Start Timer, make explosive cells movable until explosion_duration has elapsed 
             self.place_bomb()
             sm.bombToDodge()
@@ -147,13 +147,15 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
                             # No need to check impossible moves
-                            if not wrld.wall_at(p.x + dx, p.y + dy):  # allow walls spots
+                            if not wrld.wall_at(p.x + dx, p.y + dy) and not wrld.monsters_at(p.x + dx, p.y + dy) and not wrld.explosion_at(p.x +dx, p.y+dy):  # allow walls spots
                                 # make a list of moves or make a new world with each move?
                                 # coords.append(p.x + dx, p.y + dy)
                                 if not dodged:
                                     self.move(dx, dy)  # take evasive action
                                     dodged = True
                                     sm.dodgeToWalk()
+                                        
+                                    
 
     @staticmethod
     def getDistanceTo(cur, goal):
@@ -276,7 +278,7 @@ class Node:
     @staticmethod
     def initExpectimax(ent, depth, root, events):
         p = root.world.me(ent)
-        print(len(root.world.characters.values()))
+        #print(len(root.world.characters.values()))
         # if len(root.world.characters.values()) == 0:
         #     # newPath = deepcopy(root.path)
         #     # badNode = Node.newNode(root.world, [])
@@ -301,7 +303,7 @@ class Node:
                 if m[0].name == "aggressive":
                     scanRange = 3
                 if m[0].name == "selfpreserving":
-                    scanRange = 2
+                    scanRange = 3
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
                 fpath = [(p.x, p.y)]
