@@ -12,6 +12,7 @@ from monsters.selfpreserving_monster import SelfPreservingMonster
 # TODO This is your code!
 sys.path.insert(1, '../group27')
 from testcharacter import TestCharacter
+from interactivecharacter import InteractiveCharacter
 
 # Create the game
 # TODO Change this if you want different random choices
@@ -29,7 +30,8 @@ g.add_monster(SelfPreservingMonster("aggressive", # name
 # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
-                              0, 0  # position
+                              0, 0,  # position
+                                [(2,0),(7,0),(0,6),(3,5),(7,6),(0,10),(3,10),(7,10),(0,14),(7,14)] #targets
 ))
 
 # g.add_character(InteractiveCharacter("me", # name

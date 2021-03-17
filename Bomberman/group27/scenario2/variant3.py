@@ -24,7 +24,8 @@ g.add_monster(SelfPreservingMonster("selfpreserving", # name
 # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
-                              0, 0  # position
+                              0, 0,  # position
+                              [(0, 2), (7, 2), (0, 6), (7, 6), (0, 10), (7, 10), (0, 14), (7, 14)] #targets
 ))
 
 # Run!

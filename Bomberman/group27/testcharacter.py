@@ -33,112 +33,94 @@ class BombermanSM(StateMachine):
     dodgeToWalk = dodge.to(walk)
 
 class TestCharacter(CharacterEntity):
+
+    def __init__(self, name, avatar, x, y, targets):
+        super().__init__(name, avatar, x, y)
+        self.goalQ = targets
+        self.decoyGoal = (1, 1)
+        self.depth = 4
+        self.chaseLength = 0
+
+
     def do(self, wrld):
         b = wrld.bombs.values()
-        e = wrld.explosions.values()
-        print(b)
-        print(e)
         p = wrld.me(self)  # get player location
         sm = BombermanSM()
 
-        if sm.current_state == BombermanSM.walk:
-            goal = (wrld.exitcell[0], wrld.exitcell[1])  # this could be empty
+        if not self.goalQ:
+            self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
 
-            path = self.Astar(wrld, (p.x, p.y), goal)
+        if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
+            if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
+                if len(b) == 0: # check that no bomb has already been placed
+                    self.goalQ.pop(0) # remove the goal from the Q
+                    sm.walkToBomb() # place bomb at target
+
+        if sm.current_state == BombermanSM.walk: # by default we are walking to the exit
+            goal = self.goalQ[0] # set the top of the stack as our goal point
+            path = self.Astar(wrld, (p.x, p.y), goal) # compute path to goal
             fpath = [goal]
-            stuck = False;
             while not (p.x, p.y) in fpath:
-                if not stuck:
-                    try:
+                fpath.append(path.get(fpath[-1]))
+            fpath.reverse()
+
+    #TODO fix this shit
+            # traverse the path to exit, if there is something in the way, set the decoygoal to the closest point before
+            previous = self.decoyGoal
+            exploded = False
+            for cell in fpath[1:]:
+
+                for b in wrld.bombs.values():
+                    if b.timer <= 1:  # if its within two turns of exploding, dont allow walking in explosions
+                        for bx in range(-wrld.expl_range, wrld.expl_range + 1):
+                            for by in range(-wrld.expl_range, wrld.expl_range + 1):
+                                if bx == 0 or by == 0:
+                                    if cell == (b.x + bx, b.y + by):  # if we are moving into an explody
+                                        exploded = True
+
+                if wrld.bomb_at(cell[0], cell[1]) or wrld.explosion_at(cell[0], cell[1]) or exploded:
+                    path = self.Astar(wrld, (p.x, p.y), previous)
+                    fpath = [previous]
+                    while not (p.x, p.y) in fpath:
                         fpath.append(path.get(fpath[-1]))
-                    except:
-                        stuck = True
-                        #sm.walkToBomb()
-                        self.move(0,0)
-                        break
-            if not stuck:
-                fpath.reverse()
-
-                # waitingForBomb = False
-                # for cell in fpath:  # check if the path made is safe
-                #     if wrld.bomb_at(cell[0], cell[1]) or wrld.explosion_at(cell[0], cell[1]):
-                #         waitingForBomb = True
-                #         self.move(0, 0)  # if not, just wait
-
-                # if not waitingForBomb:  # if path is safe
-                #     move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
-
-                if wrld.wall_at(fpath[1][0], fpath[1][1]) and len(b) == 0:
-                    sm.walkToBomb()
-
-                if (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())):
-                    if (wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y+1) or wrld.wall_at(p.x+1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
-                        sm.walkToBomb()
-                    
-                for dx in range (1, wrld.width()):
-                    # Avoid out-of-bound indexing
-                    if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
-                    # Loop through delta y
-                        for dy in range (1, wrld.height()):
-                            # Avoid out-of-bound indexing
-                            if  (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())) and (p.y + dy >= 0) and (p.y + dy < wrld.height()):
-                                if (wrld.exit_at(p.x, p.y + dy) or wrld.exit_at(p.x+1, p.y + dy)) and wrld.wall_at(p.x, p.y+1):
-                                    if sm.current_state == BombermanSM.walk and len(b) == 0:
-                                        sm.walkToBomb()
+                    fpath.reverse()
+                    break
                 else:
-                    scanRange = 1
-                    danger = False
-                    for m in wrld.monsters.values():  # check how far we are from each monster
-                        if m[0].name == "stupid":
-                            scanRange = 2
-                        if m[0].name == "aggressive":
-                            scanRange = 4
-                        if m[0].name == "selfpreserving":
-                            scanRange = 3
-                        # we are attempting to move towards goal, check if we would be within range of monster
-                        xdistance = math.fabs(p.x - m[0].x)
-                        ydistance = math.fabs(p.y - m[0].y)
+                    previous = (cell[0], cell[1])
 
-                        if ydistance < 3:
-                            if sm.current_state == BombermanSM.walk and len(b) == 0:
-                                sm.walkToBomb()
-                        elif m[0].x - scanRange <= p.x <= m[0].x + scanRange and  m[0].y - scanRange <= p.y <= m[0].y + scanRange:
-                            danger = True
-                        
+            scanRange = 1
+            danger = False
+            for m in wrld.monsters.values():  # check how far we are from each monster
+                if m[0].name == "stupid":
+                    scanRange = 2
+                if m[0].name == "aggressive":
+                    scanRange = 4
+                if m[0].name == "selfpreserving":
+                    scanRange = 3
 
-                    if danger:
-                        # check new worlds for 3 layers in advance
-                        depth = 4
-                        root = Node.newNode(SensedWorld.from_world(wrld), [])
-                        root = Node.initExpectimax(self, depth, root, [])
+                if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
+                    danger = True
 
-                        # return move of best expectimax
-                        move = Node.expectimax(root, True)
-                        print(move)
-                        move = move[0]
+            if danger: # if we are in danger, use expectimax
+                self.chaseLength +=1
+                root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [])
+                result = Node.expectimax(root, True)
 
-                    if not danger:
-                        # path = self.Astar(wrld, (p.x, p.y), goal)
-                        # fpath = [goal]
-                        # while not (p.x, p.y) in fpath:
-                        #     fpath.append(path.get(fpath[-1]))
-                        # fpath.reverse()
-                        move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
-                    # print(move)
-                    
-                    self.move(move[0], move[1])  # execute move
+                if self.chaseLength < 6:
+                    self.chaseLength = 0
+                    self.place_bomb()
+                move = result[0]
+
+            if not danger: # if not in danger, follow A*
+                print(danger)
+                try:
+                    move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
+                except:
+                    print("Stuck")
+                    move = (0,0)
+            self.move(move[0], move[1])  # execute move
 
         if sm.current_state == BombermanSM.bomb:
-            # check if position to move to is a wall
-            print("Wall here bitch")  # take evasive action
-            # TODO: Start Timer, make explosive cells movable until explosion_duration has elapsed 
-            self.place_bomb()
-            sm.bombToDodge()
-
-        if sm.current_state == BombermanSM.dodge:
-            # check if a bomb has been placed
-            # Loop through delta x
-            dodged = False
             for dx in [-1, 1]:
                 # Avoid out-of-bound indexing
                 if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
@@ -147,13 +129,15 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
                             # No need to check impossible moves
-                            if not wrld.wall_at(p.x + dx, p.y + dy):  # allow walls spots
-                                # make a list of moves or make a new world with each move?
-                                # coords.append(p.x + dx, p.y + dy)
-                                if not dodged:
-                                    self.move(dx, dy)  # take evasive action
-                                    dodged = True
-                                    sm.dodgeToWalk()
+                            if not wrld.wall_at(p.x + dx, p.y + dy):  # dont allow walls
+                                self.decoyGoal = (p.x + dx, p.y + dy)
+                                break
+                    else:
+                        continue
+                    break
+            self.place_bomb()
+            sm.bombToWalk()
+
 
     @staticmethod
     def getDistanceTo(cur, goal):
@@ -174,63 +158,43 @@ class TestCharacter(CharacterEntity):
                         # Avoid out-of-bound indexing
                         if (startCoords[1] + dy >= 0) and (startCoords[1] + dy < wrld.height()):
                             # No need to check impossible moves
-                            if (allowWalls or not wrld.wall_at(startCoords[0] + dx,
-                                                              startCoords[1] + dy)) and (not wrld.bomb_at(startCoords[0] + dx,
-                                                              startCoords[1] + dy) and not wrld.explosion_at(startCoords[0] + dx,
-                                                              startCoords[1] + dy)): # allow walls spots
+                            if allowWalls or not wrld.wall_at(startCoords[0] + dx,startCoords[1] + dy):
                                 # make a list of moves or make a new world with each move?
                                 coords.append((startCoords[0] + dx, startCoords[1] + dy))
-        #print(coords)
-        for b in wrld.bombs.values():
-            for bx in range (-wrld.expl_range, wrld.expl_range+1):
-                for by in range (-wrld.expl_range, wrld.expl_range+1):
-                    if bx == 0 or by == 0:
-                        position = (b.x + bx, b.y + by)
-                        #print(position)
-                        try: 
-                            coords.remove(position)
-                        except ValueError:
-                            pass
-        #print(coords)
         return coords
 
     @staticmethod
     def Astar(wrld, start, goal):  # start and goal are (x,y) tuples
         frontier = PriorityQueue()
-        frontier.put(start, 0)
+        frontier.put((0, start))
         came_from = dict()
         cost_so_far = dict()
-        # came_from[start] = None
         cost_so_far[start] = 0
 
         while not frontier.empty():
             current = frontier.get()
 
-            if current == goal:
-                # print(came_from)
+            if current[1] == goal:
+
                 return came_from
 
-            for next in TestCharacter.getPlayerNeighbors(current, wrld, True):
+            for next in TestCharacter.getPlayerNeighbors(current[1], wrld, True):
 
                 wallcost = 1
 
                 if wrld.wall_at(next[0], next[1]):
                     wallcost += 100
-                bombcost = 1
-                if wrld.bomb_at(next[0], next[1]):
-                    bombcost += 200
                 if wrld.explosion_at(next[0], next[1]):
-                    bombcost += 200
-
+                    wallcost += 1000
 
                 # graph.cost(current, next) #change this to use bomb maybe
-                new_cost = cost_so_far[current] + wallcost + bombcost
+                new_cost = cost_so_far[current[1]] + wallcost
                 if next not in cost_so_far or new_cost < cost_so_far[next]:
                     cost_so_far[next] = new_cost
                     priority = new_cost + TestCharacter.getDistanceTo(next, goal)
-                    frontier.put(next, priority)
+                    frontier.put((priority, next))
                     # self.set_cell_color(next[0], next[1], Fore.MAGENTA)
-                    came_from[next] = current
+                    came_from[next] = current[1]
 
 
 class Node:
@@ -260,8 +224,7 @@ class Node:
             for c in node.children:
                 boi = Node.expectimax(c, False)
                 expectichildren.append(boi)
-            # print(expectichildren)
-            # print(max(expectichildren, key=lambda i: i[1]))
+
             return max(expectichildren, key=lambda i: i[1])
 
         # Chance node. Returns the average of
@@ -276,7 +239,7 @@ class Node:
     @staticmethod
     def initExpectimax(ent, depth, root, events):
         p = root.world.me(ent)
-        print(len(root.world.characters.values()))
+
         # if len(root.world.characters.values()) == 0:
         #     # newPath = deepcopy(root.path)
         #     # badNode = Node.newNode(root.world, [])
@@ -299,9 +262,9 @@ class Node:
                 if m[0].name == "stupid":
                     scanRange = 2
                 if m[0].name == "aggressive":
-                    scanRange = 3
+                    scanRange = 4
                 if m[0].name == "selfpreserving":
-                    scanRange = 2
+                    scanRange = 3
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
                 fpath = [(p.x, p.y)]
@@ -378,7 +341,7 @@ class Node:
                                     newNode.children.append(Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path),events))
                                 root.children.append(newNode)
 
-            return root  # TODO something, maybe copy world more
+            return root
         else:  # is bottom level, we need to evaluate each current level node
             score = 0
             for e in events:
@@ -389,7 +352,7 @@ class Node:
                     root.score = tuple((root.path, score))
                     return root
                 elif e.tpe == Event.BOMB_HIT_CHARACTER:
-                    score -= 1000
+                    score -= 2000
                     root.score = tuple((root.path, score))
                     return root
                 elif e.tpe == Event.BOMB_HIT_MONSTER:
@@ -406,26 +369,8 @@ class Node:
             fpath.reverse()
             score -= 5 * len(fpath)  # penalize for longer paths
 
-            #give 1 point for every free space in the next world, this should discourage us from running into walls
+            # give 2 point for every free space in the next world, this should discourage us from running into walls
             score += 2 * len(TestCharacter.getPlayerNeighbors((p.x, p.y), root.world, False))
-
-            #score -= 2 * (root.world.exitcell[0] - p.x)
-
-            # print(root.path[0])
-            # if root.path[0][0][0] == 1 or root.path[0][0][0] == -1:
-            #     score += 8
-            #
-            # if root.path[0][0][0] == 0:
-            #     score += 3
-            #
-            # if root.path[0][0][1] == -1:
-            #     score -= 5
-            #
-            # if root.path[0][0][1] == 0:
-            #     score += 3
-            #
-            # if root.path[0][0][1] == 1:
-            #     score += 9
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
@@ -435,22 +380,13 @@ class Node:
                 elif m[0].name == "selfpreserving":
                     scanRange = 3
 
-                # xdistance = math.fabs(p.x - m[0].x)
-                # ydistance = math.fabs(p.y - m[0].y)
-                
-                # if xdistance >= scanRange:
-                #     score += 10 * (scanRange-xdistance)
-                # if ydistance >= scanRange:
-                #     score += 10 * (scanRange-ydistance)
-                if m[0].y < p.y:
-                    score += 15
-
                 monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
                 mpath = [(m[0].x, m[0].y)]
                 while not (p.x, p.y) in mpath:
                     try:
                         mpath.append(monsterpath.get(mpath[-1]))
                     except:
+
                         root.score = tuple((root.path, 1000))
                         return root
 

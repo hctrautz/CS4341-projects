@@ -17,8 +17,9 @@ g = Game.fromfile('map.txt')
 # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
-                              0, 0  # position
+                              0, 0, # position
+                              [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]    # targets
 ))
 
 # Run!
-g.go(500)
+g.go(50)

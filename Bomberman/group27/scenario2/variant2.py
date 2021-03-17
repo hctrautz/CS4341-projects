@@ -13,7 +13,7 @@ sys.path.insert(1, '../group27')
 from testcharacter import TestCharacter
 
 # Create the game
-random.seed(123) # TODO Change this if you want different random choices
+# TODO Change this if you want different random choices
 g = Game.fromfile('map.txt')
 g.add_monster(StupidMonster("stupid", # name
                             "S",      # avatar
@@ -23,7 +23,8 @@ g.add_monster(StupidMonster("stupid", # name
 # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
-                              0, 0  # position
+                              0, 0,  # position
+                              [(0, 2), (7, 2), (0, 6), (7, 6), (0, 10), (7, 10), (0, 14), (7, 14)]    # targets
 ))
 
 # Run!
