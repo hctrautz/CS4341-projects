@@ -27,8 +27,6 @@ class BombermanSM(StateMachine):
     # Idle is detection state
     walkToBomb = walk.to(bomb)
     bombToDodge = bomb.to(dodge)
-    walkToIdleBomb = walk.to(idleBomb)
-    dodgeToIdleBomb = dodge.to(idleBomb)
     bombToWalk = bomb.to(walk)
     dodgeToWalk = dodge.to(walk)
 
@@ -92,7 +90,7 @@ class TestCharacter(CharacterEntity):
             danger = False
             for m in wrld.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
-                    scanRange = 2
+                    scanRange = 3
                 if m[0].name == "aggressive":
                     scanRange = 4
                 if m[0].name == "selfpreserving":
@@ -260,7 +258,7 @@ class Node:
 
             for m in root.world.monsters.values(): #loop through the monsters, and create moves for each
                 if m[0].name == "stupid":
-                    scanRange = 2
+                    scanRange = 3
                 if m[0].name == "aggressive":
                     scanRange = 4
                 if m[0].name == "selfpreserving":
@@ -374,7 +372,7 @@ class Node:
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
-                    scanRange = 2
+                    scanRange = 3
                 elif m[0].name == "aggressive":
                     scanRange = 4
                 elif m[0].name == "selfpreserving":
