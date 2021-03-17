@@ -47,6 +47,10 @@ class TestCharacter(CharacterEntity):
         if not self.goalQ:
             self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
 
+        # if len(wrld.monsters.values()) == 0:
+        #     self.goalQ.clear()
+        #     self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1]))
+
         if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
             if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
                 if len(b) == 0: # check that no bomb has already been placed
@@ -93,7 +97,7 @@ class TestCharacter(CharacterEntity):
                 if m[0].name == "aggressive":
                     scanRange = 4
                 if m[0].name == "selfpreserving":
-                    scanRange = 3
+                    scanRange = 4
 
                 if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
                     danger = True
@@ -261,7 +265,7 @@ class Node:
                 if m[0].name == "aggressive":
                     scanRange = 4
                 if m[0].name == "selfpreserving":
-                    scanRange = 3
+                    scanRange = 4
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
                 fpath = [(p.x, p.y)]
@@ -375,7 +379,7 @@ class Node:
                 elif m[0].name == "aggressive":
                     scanRange = 4
                 elif m[0].name == "selfpreserving":
-                    scanRange = 3
+                    scanRange = 4
 
                 monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
                 mpath = [(m[0].x, m[0].y)]
