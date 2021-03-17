@@ -22,7 +22,6 @@ sys.path.insert(0, '../bomberman')
 class BombermanSM(StateMachine):
     walk = State('walk', initial=True)
     bomb = State('bomb')
-    idleBomb = State('idleBomb')
     dodge = State('dodge')
     # Idle is detection state
     walkToBomb = walk.to(bomb)
