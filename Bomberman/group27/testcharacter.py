@@ -22,13 +22,10 @@ sys.path.insert(0, '../bomberman')
 class BombermanSM(StateMachine):
     walk = State('walk', initial=True)
     bomb = State('bomb')
-    idleBomb = State('idleBomb')
     dodge = State('dodge')
     # Idle is detection state
     walkToBomb = walk.to(bomb)
     bombToDodge = bomb.to(dodge)
-    walkToIdleBomb = walk.to(idleBomb)
-    dodgeToIdleBomb = dodge.to(idleBomb)
     bombToWalk = bomb.to(walk)
     dodgeToWalk = dodge.to(walk)
 
@@ -71,8 +68,12 @@ class TestCharacter(CharacterEntity):
                     sm.walkToBomb()
 
                 if len(wrld.monsters.values()) != 0:
-                    if (p.x+1 in range(wrld.width())) and (p.y+1 in range(wrld.height())):
-                        if (wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y+1) or wrld.wall_at(p.x+1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
+                    xTest1 = (p.x+1 >= 0 and p.x+1 < wrld.width())
+                    xTest2 = (p.y+1 >= 0 and p.y+1 < wrld.height())
+                    yTest1 = (p.x-1 >= 0 and p.x-1 < wrld.width()) 
+                    yTest2 = (p.x-1 >= 0 and p.x-1 < wrld.width())
+                    if xTest1 and xTest2 and yTest1 and yTest2:
+                        if (wrld.wall_at(p.x, p.y-1) or wrld.wall_at(p.x, p.y+1) or wrld.wall_at(p.x+1, p.y) or wrld.wall_at(p.x-1, p.y)) and len(b) == 0 and sm.current_state == BombermanSM.walk:
                             sm.walkToBomb()
                     
                 for dx in range (1, wrld.width()):
@@ -90,7 +91,7 @@ class TestCharacter(CharacterEntity):
                     danger = False
                     for m in wrld.monsters.values():  # check how far we are from each monster
                         if m[0].name == "stupid":
-                            scanRange = 2
+                            scanRange = 3
                         if m[0].name == "aggressive":
                             scanRange = 4
                         if m[0].name == "selfpreserving":
@@ -116,6 +117,7 @@ class TestCharacter(CharacterEntity):
                         move = Node.expectimax(root, True)
                         #print(move)
                         move = move[0]
+                        self.place_bomb()
 
                     if not danger:
                         # path = self.Astar(wrld, (p.x, p.y), goal)
@@ -125,8 +127,10 @@ class TestCharacter(CharacterEntity):
                         # fpath.reverse()
                         move = (fpath[1][0] - fpath[0][0], fpath[1][1] - fpath[0][1])
                     # print(move)
-                    
-                    self.move(move[0], move[1])  # execute move
+                    if len(move) != 0:
+                        self.move(move[0], move[1]) 
+                    else:
+                        self.move(0,0)
 
         if sm.current_state == BombermanSM.bomb:
             # check if position to move to is a wall
@@ -299,9 +303,9 @@ class Node:
 
             for m in root.world.monsters.values(): #loop through the monsters, and create moves for each
                 if m[0].name == "stupid":
-                    scanRange = 2
-                if m[0].name == "aggressive":
                     scanRange = 3
+                if m[0].name == "aggressive":
+                    scanRange = 4
                 if m[0].name == "selfpreserving":
                     scanRange = 3
 
