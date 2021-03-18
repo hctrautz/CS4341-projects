@@ -48,8 +48,8 @@ class TestCharacter(CharacterEntity):
             self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
 
         # if len(wrld.monsters.values()) == 0:
-        #     self.goalQ.clear()
-        #     self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1]))
+        #      self.goalQ.clear()
+        #      self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1]))
 
         if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
             if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
@@ -93,15 +93,16 @@ class TestCharacter(CharacterEntity):
             danger = False
             for m in wrld.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
-                    scanRange = 3
+                    scanRange = 2
                 if m[0].name == "aggressive":
-                    scanRange = 4
+                    scanRange = 3
                 if m[0].name == "selfpreserving":
-                    scanRange = 4
+                    scanRange = 3
 
                 if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
                     danger = True
 
+            move = (-9,-9)
             if danger: # if we are in danger, use expectimax
                 self.chaseLength +=1
                 root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [])
@@ -110,7 +111,8 @@ class TestCharacter(CharacterEntity):
                 if self.chaseLength < 6:
                     self.chaseLength = 0
                     self.place_bomb()
-                move = result[0]
+                else:
+                    move = result[0]
 
             if not danger: # if not in danger, follow A*
                 print(danger)
@@ -121,24 +123,29 @@ class TestCharacter(CharacterEntity):
                     move = (0,0)
             self.move(move[0], move[1])  # execute move
 
-        if sm.current_state == BombermanSM.bomb:
-            for dx in [-1, 1]:
-                # Avoid out-of-bound indexing
-                if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
-                    # Loop through delta y
-                    for dy in [-1, 1]:
+            if sm.current_state == BombermanSM.bomb:
+                try:
+                    bb = next(iter(wrld.bombs.values()))
+                    for dx in [-1, 1]:
                         # Avoid out-of-bound indexing
-                        if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
-                            # No need to check impossible moves
-                            if not wrld.wall_at(p.x + dx, p.y + dy):  # dont allow walls
-                                self.decoyGoal = (p.x + dx, p.y + dy)
-                                break
-                    else:
-                        continue
-                    break
-            self.place_bomb()
-            sm.bombToWalk()
-
+                        if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
+                            # Loop through delta y
+                            for dy in [-1,1]:
+                                # Avoid out-of-bound indexing
+                                if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
+                                    # No need to check impossible moves
+                                    if not wrld.wall_at(bb.x + dx, bb.y + dy) and not wrld.explosion_at(bb.x + dx, bb.y + dy):  # dont allow walls
+                                        self.decoyGoal = (bb.x + dx, bb.y + dy)
+                                        break
+                            else:
+                                continue
+                            break
+                except(StopIteration):
+                    pass
+                self.place_bomb()
+                print("placed bomb")
+                print(self.decoyGoal)
+                sm.bombToWalk()
 
     @staticmethod
     def getDistanceTo(cur, goal):
@@ -261,11 +268,11 @@ class Node:
 
             for m in root.world.monsters.values(): #loop through the monsters, and create moves for each
                 if m[0].name == "stupid":
-                    scanRange = 3
+                    scanRange = 2
                 if m[0].name == "aggressive":
-                    scanRange = 4
+                    scanRange = 3
                 if m[0].name == "selfpreserving":
-                    scanRange = 4
+                    scanRange = 3
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
                 fpath = [(p.x, p.y)]
@@ -348,12 +355,14 @@ class Node:
             for e in events:
                 if e.tpe == Event.CHARACTER_FOUND_EXIT:
                     score += 5000
+                    root.score = tuple((root.path, score))
+                    return root
                 elif e.tpe == Event.CHARACTER_KILLED_BY_MONSTER:
                     score -= 1000
                     root.score = tuple((root.path, score))
                     return root
                 elif e.tpe == Event.BOMB_HIT_CHARACTER:
-                    score -= 2000
+                    score -= 3000
                     root.score = tuple((root.path, score))
                     return root
                 elif e.tpe == Event.BOMB_HIT_MONSTER:
