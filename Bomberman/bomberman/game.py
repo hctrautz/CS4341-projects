@@ -1,5 +1,5 @@
-from real_world import RealWorld
-from events import Event
+from bomberman.real_world import RealWorld
+from bomberman.events import Event
 import colorama
 import pygame
 import math

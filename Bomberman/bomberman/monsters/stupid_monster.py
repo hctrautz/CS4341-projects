@@ -1,6 +1,6 @@
 # import sys
 # sys.path.insert(0, '..')
-from entity import MonsterEntity
+from bomberman.entity import MonsterEntity
 import random
 
 class StupidMonster(MonsterEntity):

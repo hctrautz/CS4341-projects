@@ -1,6 +1,6 @@
-from world import World
-from sensed_world import SensedWorld
-from events import Event
+from bomberman.world import World
+from bomberman.sensed_world import SensedWorld
+from bomberman.events import Event
 
 class RealWorld(World):
     """The real world state"""

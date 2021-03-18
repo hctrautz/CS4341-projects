@@ -1,12 +1,18 @@
+# This is necessary to find the main code
 import sys
-from group27.testcharacter import TestCharacter
-
-sys.path.insert(0, '../bomberman')
+sys.path.insert(0, '../../bomberman')
+sys.path.insert(1, '..')
 
 # Import necessary stuff
-from game import Game
-from monsters.stupid_monster import StupidMonster
-from monsters.selfpreserving_monster import SelfPreservingMonster
+import random
+from bomberman.game import Game
+from bomberman.monsters.stupid_monster import StupidMonster
+from bomberman.monsters.selfpreserving_monster import SelfPreservingMonster
+
+# TODO This is your code!
+sys.path.insert(1, '../group27')
+from group27.testcharacter import TestCharacter
+from group27.interactivecharacter import InteractiveCharacter
 
 
 

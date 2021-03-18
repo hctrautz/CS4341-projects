@@ -1,5 +1,5 @@
-from entity import *
-from events import Event
+from bomberman.entity import *
+from bomberman.events import Event
 import sys
 from colorama import Fore, Back, Style
 
