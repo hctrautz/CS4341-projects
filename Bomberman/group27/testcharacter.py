@@ -3,14 +3,14 @@ import math
 from copy import deepcopy
 
 from colorama import Fore, Back
-from bomberman.entity import CharacterEntity
-from bomberman.events import *
+from entity import CharacterEntity
+from events import *
 import sys
 from statemachine import StateMachine, State
 from queue import PriorityQueue
 import itertools
 
-from bomberman.sensed_world import SensedWorld
+from sensed_world import SensedWorld
 
 sys.path.insert(0, '../bomberman')
 

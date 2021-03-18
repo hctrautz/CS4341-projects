@@ -1,6 +1,6 @@
-from bomberman.entity import *
-from bomberman.events import *
-from bomberman.world import World
+from entity import *
+from events import *
+from world import World
 
 class SensedWorld(World):
     """The world state as seen by a monster or a robot"""
