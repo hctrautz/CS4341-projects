@@ -235,17 +235,17 @@ def main():
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant25(g):
             wins5_2 += 1
-    print(f'We won {wins1} out of 10 for variant 1')
-    print(f'We won {wins2} out of 10 for variant 2')
-    print(f'We won {wins3} out of 10 for variant 3')
-    print(f'We won {wins4} out of 10 for variant 4')
-    print(f'We won {wins5} out of 10 for variant 5')
-    print(f'We won {wins1_2} out of 10 for variant 1_2')
-    print(f'We won {wins2_2} out of 10 for variant 2_2')
-    print(f'We won {wins3_2} out of 10 for variant 3_2')
-    print(f'We won {wins4_2} out of 10 for variant 4_2')
-    print(f'We won {wins5_2} out of 10 for variant 5_2')
-
+    print(f'We won {wins1} out of 50 for variant 1')
+    print(f'We won {wins2} out of 50 for variant 2')
+    print(f'We won {wins3} out of 50 for variant 3')
+    print(f'We won {wins4} out of 50 for variant 4')
+    print(f'We won {wins5} out of 50 for variant 5')
+    print(f'We won {wins1_2} out of 50 for variant 1_2')
+    print(f'We won {wins2_2} out of 50 for variant 2_2')
+    print(f'We won {wins3_2} out of 50 for variant 3_2')
+    print(f'We won {wins4_2} out of 50 for variant 4_2')
+    print(f'We won {wins5_2} out of 50 for variant 5_2')
+    print("freq 8")
 
 if __name__ == "__main__":
     # execute only if run as a script
