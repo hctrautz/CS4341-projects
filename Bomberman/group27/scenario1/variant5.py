@@ -40,4 +40,4 @@ g.add_character(TestCharacter("me", # name
 
 
 # Run!
-g.go(50)
+g.go(100)
