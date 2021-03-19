@@ -27,11 +27,11 @@ g.add_monster(SelfPreservingMonster("aggressive", # name
                                     2             # detection range
 ))
 
-# TODO Add your character
+# # TODO Add your character
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
                               0, 0,  # position
-                                [(2,0),(7,0),(1,3),(0,6),(3,5),(7,6),(0,10),(3,10),(7,10),(0,14),(3,14),(7,14)] #targets
+                                [(2,0),(7,0),(2,3),(7,3),(0,10),(3,10),(7,10),(0,14),(3,14)] #targets
 ))
 
 # g.add_character(InteractiveCharacter("me", # name
@@ -39,4 +39,4 @@ g.add_character(TestCharacter("me", # name
 #                                      0, 0  # position
 # ))
 # Run!
-g.go(40)
+g.go(5)

@@ -88,7 +88,7 @@ def variant15(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(7,14)]))
+                                     [(7,6),(7,14)]))
 
     # Run!
     g.go(1)
@@ -102,7 +102,7 @@ def variant21(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]))
+                                  [(0,2),(0,6),(0,10),(0,14)]))
     # Use this if you want to proceed automatically
     g.go(1)
     if g.world.scores["me"] > 0:
@@ -118,7 +118,7 @@ def variant22(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]))
+                                  [(0,2),(0,6),(0,10),(0,14)]))
 
     # Run!
     g.go(1)
@@ -136,7 +136,7 @@ def variant23(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]))
+                                  [(0, 2), (7, 2), (0, 6), (7, 6), (0, 10), (7, 10), (0, 14), (7, 14)]))
 
     # Run!
     g.go(1)
@@ -154,7 +154,7 @@ def variant24(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]))
+                                  [(0, 2), (7, 2), (0, 6), (7, 6), (0, 10), (7, 10), (0, 14)]))
 
     # Run!
     g.go(1)
@@ -176,7 +176,8 @@ def variant25(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(0,2),(7,2),(0,6),(7,6),(0,10),(7,10),(0,14),(7,14)]))
+                                  [(0, 2), (7, 2), (0, 6), (7, 6), (0, 10), (7, 10), (0, 14), (7, 14)]))
+                                  #[(2, 0), (7, 0), (2, 3), (7, 3), (0, 10), (3, 10), (7, 10), (0, 14), (3, 14)]))
 
     # Run!
     g.go(1)
@@ -195,43 +196,43 @@ def main():
     wins3_2 = 0
     wins4_2 = 0
     wins5_2 = 0
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario1/map.txt', sprite_dir="../bomberman/sprites/")
         if variant11(g):
             wins1 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario1/map.txt', sprite_dir="../bomberman/sprites/")
         if variant12(g):
             wins2 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario1/map.txt', sprite_dir="../bomberman/sprites/")
         if variant13(g):
             wins3 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario1/map.txt', sprite_dir="../bomberman/sprites/")
         if variant14(g):
             wins4 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario1/map.txt', sprite_dir="../bomberman/sprites/")
         if variant15(g):
             wins5 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant21(g):
             wins1_2 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant22(g):
             wins2_2 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant23(g):
             wins3_2 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant24(g):
             wins4_2 += 1
-    for _ in range(10):
+    for _ in range(50):
         g = Game.fromfile('scenario2/map.txt', sprite_dir="../bomberman/sprites/")
         if variant25(g):
             wins5_2 += 1

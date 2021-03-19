@@ -36,17 +36,23 @@ class TestCharacter(CharacterEntity):
 
     def __init__(self, name, avatar, x, y, targets):
         super().__init__(name, avatar, x, y)
+        self.previousPose = (0,0)
+        self.stuckCounter = 0
         self.goalQ = targets
-        self.decoyGoal = (0, 0)
+        self.blocked = False
+        self.decoyGoal = (-69, -69)
         self.depth = 3
         self.chaseLength = 0
-        self.bombFreq = 3
-
+        self.bombFreq = 4
+        self.resetTrigger = True
+        self.TrackedBomb = None
 
     def do(self, wrld):
+
         bv = wrld.bombs.values()
         p = wrld.me(self)  # get player location
         sm = BombermanSM()
+        self.previousPose = (p.x,p.y)
 
         while sm.current_state != BombermanSM.finish:
             if not self.goalQ:
@@ -59,101 +65,178 @@ class TestCharacter(CharacterEntity):
                         sm.walkToBomb() # place bomb at target
 
             if sm.current_state == BombermanSM.walk: # by default we are walking to the exit
-                goal = self.goalQ[0] # set the top of the stack as our goal point
 
-                path = self.Astar(wrld, (p.x, p.y), goal) # compute path to goal
+                goal = self.goalQ[0]
+
+                path = self.Astar(wrld, (p.x, p.y), goal, True) # compute path to goal
                 fpath = [goal]
                 while not (p.x, p.y) in fpath:
                     fpath.append(path.get(fpath[-1]))
                 fpath.reverse()
+
                 exploded = False
-                #TODO fix this shit
-                previous = self.decoyGoal
+                tempGoal = self.decoyGoal
 
                 # traverse the path to exit, if there is something in the way, set the decoygoal to the closest point before
-                for cell in fpath:
-                    for b in wrld.bombs.values():
-                        if b.timer <= 2:  # if its within two turns of exploding, dont allow walking in explosions
-                            for bx in range(-wrld.expl_range, wrld.expl_range + 1):
-                                for by in range(-wrld.expl_range, wrld.expl_range + 1):
-                                    if bx == 0 or by == 0:
-                                        if cell == (b.x + bx, b.y + by):  # if we are moving into an explody
-                                            exploded = True
+                baddieList = [] #reset everyround
 
-                    if wrld.explosion_at(cell[0], cell[1]) or exploded:
+                for b in wrld.bombs.values():
+                    if b.timer <= 2:  # if its within two turns of exploding, dont allow walking in explosions
+                        for bx in range(-wrld.expl_range, wrld.expl_range + 1):
+                            for by in range(-wrld.expl_range, wrld.expl_range + 1):
+                                if bx == 0 or by == 0:
+                                    baddieList.append((b.x + bx, b.y + by))
+
+
+                if goal[0] in baddieList: # if the goal we are going to is in bomb range, swap with next goal
+                    if len(self.goalQ) > 1:
+                        tempo = self.goalQ[0]
+                        self.goalQ[0] = self.goalQ[1]
+                        self.goalQ[1] = tempo
+
+                for cell in fpath[1:]:
+                    if wrld.explosion_at(cell[0], cell[1]) or wrld.wall_at(cell[0], cell[1]) or (cell in baddieList):
                         print("couldnt get to real goal")
-                        path = self.Astar(wrld, (p.x, p.y), previous)
-                        fpath = [previous]
+                        print(goal)
+                        path = self.Astar(wrld, (p.x, p.y), self.decoyGoal, False) #reset path to traverse to current decoy cuz we suck
+                        fpath = [self.decoyGoal]
                         while not (p.x, p.y) in fpath:
                             fpath.append(path.get(fpath[-1]))
                         fpath.reverse()
 
+                        self.blocked = True
                         break
                     else:
-                        previous = (cell[0], cell[1])
+                        tempGoal = (cell[0], cell[1])
+                        self.blocked = False
 
-                print("currentGoal")
+                if not self.blocked: # if nothing is blocking us, continue to next goal
+                    goal = self.goalQ[0]
 
-                move = (-99,-99)
+                elif self.resetTrigger: # if we are allowing a new temp goal, and we are blocked
+                    self.resetTrigger = False #reset trigger
+                    goal = tempGoal #set the goal to the new saftey
+                    self.decoyGoal = tempGoal
+
+                    path = self.Astar(wrld, (p.x, p.y), self.decoyGoal, False)  # reset path to traverse to current decoy cuz we suck
+                    fpath = [self.decoyGoal]
+                    while not (p.x, p.y) in fpath:
+                        fpath.append(path.get(fpath[-1]))
+                    fpath.reverse()
+
+                else: #else we are blocked and cannot reset, so keep goal as old saftey
+                    goal = self.decoyGoal
+
+                move = (-99 ,-99)
                 scanRange = 1
-                danger = False
+
                 for m in wrld.monsters.values():  # check how far we are from each monster
                     if m[0].name == "stupid":
-                        scanRange = 5
+                        scanRange = 2 + 1
                     if m[0].name == "aggressive":
-                        scanRange = 5
+                        scanRange = 4 + 1
                     if m[0].name == "selfpreserving":
-                        scanRange = 5
+                        scanRange = 2 + 1
 
-                    if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
-                        danger = True
+                    #if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
+                        #danger = True
+                    unreachable = False
+                    monsterpath = TestCharacter.Astar(wrld, (m[0].x, m[0].y), (p.x, p.y), False)
+                    mpath = [(p.x, p.y)]
+                    while not (m[0].x, m[0].y) in mpath:
+                        try:
+                            mpath.append(monsterpath.get(mpath[-1]))
+                        except(AttributeError):
+                            unreachable = True
+                            break
 
-                if danger: # if we are in danger, use expectimax
-                    self.chaseLength +=1
-                    root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [])
+                if not unreachable and len(mpath) >= scanRange:
+                #if danger: # if we are in danger, use expectimax
+                    self.chaseLength += 1
+                    print(goal)
+                    root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [], goal)
                     result = Node.expectimax(root, True)
 
                     if self.chaseLength >= self.bombFreq and len(bv)<1:
                         self.chaseLength = 0
                         sm.walkToBomb()
                     else:
-                        move = result[0]
+                        move = (result[0][0], result[0][1])
+                        print("moving away from danger, no bomb")
                         print(move)
+                        print("to reach this goal")
+                        print(goal)
 
-                if not danger: # if not in danger, follow A*
-                    try:
+
+                else: # if not in danger, follow A*
+
+                    if len(fpath) != 1:
                         move = (fpath[1][0] - p.x, fpath[1][1] - p.y)
-                    except:
-                        print("CRASHING")
+                    else:
                         move = (0,0)
+                    print("not in danger")
+                    print(move)
+                    print("to reach this goal")
+                    print(fpath)
+
+                    #double check to ensure saftey
+                    if wrld.explosion_at(p.x + move[0],p.y + move[1]) or ((p.x + move[0],p.y + move[1]) in baddieList): # if there is an explosion where we are going, naw
+                        for dx in [-1, 0, 1]:
+                            # Avoid out-of-bound indexing
+                            if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
+                                # Loop through delta y
+                                for dy in [-1,0, 1]:
+                                    # Avoid out-of-bound indexing
+                                    if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
+                                        # No need to check impossible moves
+                                        if (not wrld.wall_at(p.x + dx, p.y + dy)) and (not wrld.explosion_at(p.x + dx, p.y + dy)) and (not wrld.monsters_at(p.x + dx, p.y + dy)) and ((p.x + dx, p.y + dy) not in baddieList):
+                                            move = (dx, dy)
+                                            break
+                                else:
+                                    continue
+                                break
+
+
 
                 self.move(move[0], move[1])  # execute move
                 if sm.current_state == BombermanSM.walk:
                     sm.walkToFinish()
 
             if sm.current_state == BombermanSM.bomb:
-                try:
-                    bb = next(iter(wrld.bombs.values()))
-                    for dx in [-1, 1]:
-                        # Avoid out-of-bound indexing
-                        if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
-                            # Loop through delta y
-                            for dy in [-1,1]:
-                                # Avoid out-of-bound indexing
-                                if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
-                                    # No need to check impossible moves
-                                    if not wrld.wall_at(bb.x + dx, bb.y + dy) and not wrld.explosion_at(bb.x + dx, bb.y + dy):  # dont allow walls
-                                        self.decoyGoal = (bb.x + dx, bb.y + dy)
-                                        break
-                            else:
-                                continue
-                            break
-                except(StopIteration):
-                    pass
                 self.place_bomb()
+                for dx in [-1, 1]:
+                    # Avoid out-of-bound indexing
+                    if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
+                        # Loop through delta y
+                        for dy in [-1,1]:
+                            # Avoid out-of-bound indexing
+                            if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
+                                # No need to check impossible moves
+                                if not wrld.wall_at(p.x + dx, p.y + dy) and not wrld.explosion_at(p.x + dx, p.y + dy) :  # dont allow walls
+                                    self.decoyGoal = (p.x + dx, p.y + dy)
+                                    break
+                        else:
+                            continue
+                        break
+
+
                 print("placed bomb")
                 print(self.decoyGoal)
                 sm.bombToWalk()
+
+        #put anything here that should trigger after the turn is over
+        for b in bv:
+            if b.timer == 0: #about to explode next turn to trigger reset
+                self.TrackedBomb = (b.x,b.y)
+
+            if (self.TrackedBomb is not None) and wrld.explosion_at(self.TrackedBomb[0], self.TrackedBomb[1]):
+                self.resetTrigger = True
+
+        # #check that we arent super stuck
+        # if (p.y,p.y) == self.previousPose:
+        #     self.stuckCounter += 1
+        # if self.stuckCounter > 10:
+        #     self.place_bomb()
 
     @staticmethod
     def getDistanceTo(cur, goal):
@@ -180,7 +263,7 @@ class TestCharacter(CharacterEntity):
         return coords
 
     @staticmethod
-    def Astar(wrld, start, goal):  # start and goal are (x,y) tuples
+    def Astar(wrld, start, goal, allowWalls):  # start and goal are (x,y) tuples
         frontier = PriorityQueue()
         frontier.put((0, start))
         came_from = dict()
@@ -194,7 +277,7 @@ class TestCharacter(CharacterEntity):
 
                 return came_from
 
-            for next in TestCharacter.getPlayerNeighbors(current[1], wrld, True):
+            for next in TestCharacter.getPlayerNeighbors(current[1], wrld, allowWalls):
 
                 wallcost = 1
 
@@ -253,36 +336,38 @@ class Node:
             return node.path, (totalSum / len(node.children))
 
     @staticmethod
-    def initExpectimax(ent, depth, root, events):
+    def initExpectimax(ent, depth, root, events, pathgoal):
         p = root.world.me(ent)
         try:
             p.x
-        except:
-
+        except(AttributeError):
             root.score = tuple((root.path, -1000))
             return root
         if depth != 1:  # if this isnt the bottom level, create list of children
             possiblemonstermoves = dict()
+            unreachable = False
             for m in root.world.monsters.values(): # calculate all monster money moves
                 if m[0].name == "stupid":
-                    scanRange = 3
+                    scanRange = 2 + 1
                 if m[0].name == "aggressive":
-                    scanRange = 3
+                    scanRange = 3 + 1
                 if m[0].name == "selfpreserving":
-                    scanRange = 4
+                    scanRange = 2 + 1
 
-                calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y))
+                calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y), False)
                 fpath = [(p.x, p.y)]
                 stuck = False
                 while not (m[0].x, m[0].y) in fpath:
                     if not stuck:
                         try:
                             fpath.append(calcpath.get(fpath[-1]))
-                        except:
-                            root.score = tuple((root.path, 1000))
-                            return root
+                        except(AttributeError):
+                            unreachable = True
+                            break
 
-                if len(fpath) <= scanRange:
+                if unreachable:
+                    possiblemonstermoves[m[0]] = [(0, 0)]
+                elif len(fpath) <= scanRange:
                     possiblemonstermoves[m[0]] = []  # create new entry for monster
                     if m[0].name == "stupid":
                         for dx in [-1, 0, 1]:
@@ -320,7 +405,6 @@ class Node:
                     # Loop through delta y
                     for pdy in [-1, 0, 1]:
                         # Make sure the monster is moving
-                        # TODO Allow no moving
                         # Avoid out-of-bound indexing
                         if (p.y + pdy >= 0) and (p.y + pdy < root.world.height()):
                             # No need to check impossible moves
@@ -341,7 +425,7 @@ class Node:
                                         i += 1
                                     # Get new world
                                     (newWrld, events) = root.world.next()  # get new world with moved entities
-                                    newNode.children.append(Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path),events))
+                                    newNode.children.append(Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path),events, pathgoal))
                                 root.children.append(newNode)
 
             return root
@@ -357,16 +441,12 @@ class Node:
                     root.score = tuple((root.path, score))
                     return root
                 elif e.tpe == Event.BOMB_HIT_CHARACTER:
-                    score -= 3000
+                    score -= 1000
                     root.score = tuple((root.path, score))
                     return root
 
-
-
-            goal = ent.goalQ[0]
-            #goal = (root.world.exitcell[0], root.world.exitcell[1])  # this could be empty
-            calcpath = TestCharacter.Astar(root.world, (p.x, p.y), goal)
-            fpath = [goal]
+            calcpath = TestCharacter.Astar(root.world, (p.x, p.y), pathgoal, True)
+            fpath = [pathgoal]
             while not (p.x, p.y) in fpath:
                 fpath.append(calcpath.get(fpath[-1]))
 
@@ -377,24 +457,23 @@ class Node:
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
+                    scanRange = 2
+                elif m[0].name == "aggressive":
                     scanRange = 3
-                elif m[0].name == "aggressive":
-                    scanRange = 4
-                elif m[0].name == "aggressive":
-                    scanRange = 5
                 elif m[0].name == "selfpreserving":
-                    scanRange = 4
+                    scanRange = 2
 
-                monsterpath = TestCharacter.Astar(root.world, (p.x, p.y), (m[0].x, m[0].y))
-                mpath = [(m[0].x, m[0].y)]
-                while not (p.x, p.y) in mpath:
+                monsterpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y), False)
+                mpath = [(p.x, p.y)]
+                unreachable = False
+                while not (m[0].x, m[0].y) in mpath:
                     try:
                         mpath.append(monsterpath.get(mpath[-1]))
-                    except():
-                        root.score = tuple((root.path, 1000))
-                        return root
+                    except(AttributeError):
+                        unreachable = True
+                        break
 
-                if len(mpath) <= scanRange:
+                if not unreachable and len(mpath) <= scanRange:
                     score -= 50 * (scanRange - len(mpath))
 
             root.score = tuple((root.path, score))
