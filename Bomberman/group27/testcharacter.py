@@ -1,11 +1,9 @@
 # This is necessary to find the main code
-import math
-from copy import deepcopy
-
 from colorama import Fore, Back
 from entity import CharacterEntity
 from events import *
 import sys
+
 from statemachine import StateMachine, State
 from queue import PriorityQueue
 import itertools
@@ -14,21 +12,14 @@ from sensed_world import SensedWorld
 
 sys.path.insert(0, '../bomberman')
 
-#TODO
-#TODO Improve dodging state enemy detection, he mostly just idles
-#TODO
-# Import necessary stuff
 
 class BombermanSM(StateMachine):
     walk = State('walk', initial=True)
     bomb = State('bomb')
-    dodge = State('dodge')
     finish = State('finish')
     # Idle is detection state
     walkToBomb = walk.to(bomb)
-    bombToDodge = bomb.to(dodge)
     bombToWalk = bomb.to(walk)
-    dodgeToWalk = dodge.to(walk)
     walkToFinish = walk.to(finish)
 
 
@@ -36,46 +27,43 @@ class TestCharacter(CharacterEntity):
 
     def __init__(self, name, avatar, x, y, targets):
         super().__init__(name, avatar, x, y)
-        self.previousPose = (0,0)
-        self.stuckCounter = 0
         self.goalQ = targets
         self.blocked = False
         self.decoyGoal = (-69, -69)
         self.depth = 3
         self.chaseLength = 0
-        self.bombFreq = 3
+        self.bombFreq = 2
         self.resetTrigger = True
         self.TrackedBomb = None
 
     @staticmethod
     def getDistanceTo(cur, goal):
         return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
-    
+
     def do(self, wrld):
 
         bv = wrld.bombs.values()
         p = wrld.me(self)  # get player location
         sm = BombermanSM()
-        self.previousPose = (p.x,p.y)
 
         while sm.current_state != BombermanSM.finish:
             if not self.goalQ:
-                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
+                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1]))  # if the Q is empty, add the goal
             if self.getDistanceTo((p.x, p.y), wrld.exitcell) <= 2:
                 self.goalQ.clear()
-                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) 
+                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1]))
 
-            if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
-                if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
-                    if len(bv) == 0: # check that no bomb has already been placed
-                        self.goalQ.pop(0) # remove the goal from the Q
-                        sm.walkToBomb() # place bomb at target
+            if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]:  # if bomberman has reached next goal
+                if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]):  # if not the actual goal
+                    if len(bv) == 0:  # check that no bomb has already been placed
+                        self.goalQ.pop(0)  # remove the goal from the Q
+                        sm.walkToBomb()  # place bomb at target
 
-            if sm.current_state == BombermanSM.walk: # by default we are walking to the exit
+            if sm.current_state == BombermanSM.walk:  # by default we are walking to the exit
 
                 goal = self.goalQ[0]
 
-                path = self.Astar(wrld, (p.x, p.y), goal, True) # compute path to goal
+                path = self.Astar(wrld, (p.x, p.y), goal, True)  # compute path to goal
                 fpath = [goal]
                 while not (p.x, p.y) in fpath:
                     fpath.append(path.get(fpath[-1]))
@@ -85,7 +73,7 @@ class TestCharacter(CharacterEntity):
                 tempGoal = self.decoyGoal
 
                 # traverse the path to exit, if there is something in the way, set the decoygoal to the closest point before
-                baddieList = [] #reset everyround
+                baddieList = []  # reset everyround
 
                 for b in wrld.bombs.values():
                     if b.timer <= 2:  # if its within two turns of exploding, dont allow walking in explosions
@@ -94,8 +82,7 @@ class TestCharacter(CharacterEntity):
                                 if bx == 0 or by == 0:
                                     baddieList.append((b.x + bx, b.y + by))
 
-
-                if goal[0] in baddieList: # if the goal we are going to is in bomb range, swap with next goal
+                if goal[0] in baddieList:  # if the goal we are going to is in bomb range, swap with next goal
                     if len(self.goalQ) > 1:
                         tempo = self.goalQ[0]
                         self.goalQ[0] = self.goalQ[1]
@@ -105,7 +92,8 @@ class TestCharacter(CharacterEntity):
                     if wrld.explosion_at(cell[0], cell[1]) or wrld.wall_at(cell[0], cell[1]) or (cell in baddieList):
                         print("couldnt get to real goal")
                         print(goal)
-                        path = self.Astar(wrld, (p.x, p.y), self.decoyGoal, False) #reset path to traverse to current decoy cuz we suck
+                        path = self.Astar(wrld, (p.x, p.y), self.decoyGoal,
+                                          False)  # reset path to traverse to current decoy cuz we suck
                         fpath = [self.decoyGoal]
                         while not (p.x, p.y) in fpath:
                             fpath.append(path.get(fpath[-1]))
@@ -117,24 +105,25 @@ class TestCharacter(CharacterEntity):
                         tempGoal = (cell[0], cell[1])
                         self.blocked = False
 
-                if not self.blocked: # if nothing is blocking us, continue to next goal
+                if not self.blocked:  # if nothing is blocking us, continue to next goal
                     goal = self.goalQ[0]
 
-                elif self.resetTrigger: # if we are allowing a new temp goal, and we are blocked
-                    self.resetTrigger = False #reset trigger
-                    goal = tempGoal #set the goal to the new saftey
+                elif self.resetTrigger:  # if we are allowing a new temp goal, and we are blocked
+                    self.resetTrigger = False  # reset trigger
+                    goal = tempGoal  # set the goal to the new saftey
                     self.decoyGoal = tempGoal
 
-                    path = self.Astar(wrld, (p.x, p.y), self.decoyGoal, False)  # reset path to traverse to current decoy cuz we suck
+                    path = self.Astar(wrld, (p.x, p.y), self.decoyGoal,
+                                      False)  # reset path to traverse to current decoy cuz we suck
                     fpath = [self.decoyGoal]
                     while not (p.x, p.y) in fpath:
                         fpath.append(path.get(fpath[-1]))
                     fpath.reverse()
 
-                else: #else we are blocked and cannot reset, so keep goal as old saftey
+                else:  # else we are blocked and cannot reset, so keep goal as old saftey
                     goal = self.decoyGoal
 
-                move = (-99 ,-99)
+                move = (-99, -99)
                 scanRange = 1
                 danger = False
                 for m in wrld.monsters.values():  # check how far we are from each monster
@@ -159,13 +148,14 @@ class TestCharacter(CharacterEntity):
                         danger = True
                         break
 
-                if danger: # if we are in danger, use expectimax
+                if danger:  # if we are in danger, use expectimax
                     self.chaseLength += 1
                     print(goal)
-                    root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [], goal)
+                    root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [],
+                                               goal)
                     result = Node.expectimax(root, True)
 
-                    if self.chaseLength >= self.bombFreq and len(bv)<1:
+                    if self.chaseLength >= self.bombFreq and len(bv) < 1:
                         self.chaseLength = 0
                         sm.walkToBomb()
                     else:
@@ -176,35 +166,37 @@ class TestCharacter(CharacterEntity):
                         print(goal)
 
 
-                else: # if not in danger, follow A*
+                else:  # if not in danger, follow A*
 
                     if len(fpath) != 1:
                         move = (fpath[1][0] - p.x, fpath[1][1] - p.y)
                     else:
-                        move = (0,0)
+                        move = (0, 0)
                     print("not in danger")
                     print(move)
                     print("to reach this goal")
                     print(fpath)
 
-                    #double check to ensure saftey
-                    if wrld.explosion_at(p.x + move[0],p.y + move[1]) or ((p.x + move[0],p.y + move[1]) in baddieList): # if there is an explosion where we are going, naw
+                    # double check to ensure saftey
+                    if wrld.explosion_at(p.x + move[0], p.y + move[1]) or ((p.x + move[0], p.y + move[
+                        1]) in baddieList):  # if there is an explosion where we are going, naw
                         for dx in [-1, 0, 1]:
                             # Avoid out-of-bound indexing
                             if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
                                 # Loop through delta y
-                                for dy in [-1,0, 1]:
+                                for dy in [-1, 0, 1]:
                                     # Avoid out-of-bound indexing
                                     if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
                                         # No need to check impossible moves
-                                        if (not wrld.wall_at(p.x + dx, p.y + dy)) and (not wrld.explosion_at(p.x + dx, p.y + dy)) and (not wrld.monsters_at(p.x + dx, p.y + dy)) and ((p.x + dx, p.y + dy) not in baddieList):
+                                        if (not wrld.wall_at(p.x + dx, p.y + dy)) and (
+                                        not wrld.explosion_at(p.x + dx, p.y + dy)) and (
+                                        not wrld.monsters_at(p.x + dx, p.y + dy)) and (
+                                                (p.x + dx, p.y + dy) not in baddieList):
                                             move = (dx, dy)
                                             break
                                 else:
                                     continue
                                 break
-
-
 
                 self.move(move[0], move[1])  # execute move
                 if sm.current_state == BombermanSM.walk:
@@ -216,26 +208,26 @@ class TestCharacter(CharacterEntity):
                     # Avoid out-of-bound indexing
                     if (p.x + dx >= 0) and (p.x + dx < wrld.width()):
                         # Loop through delta y
-                        for dy in [-1,1]:
+                        for dy in [-1, 1]:
                             # Avoid out-of-bound indexing
                             if (p.y + dy >= 0) and (p.y + dy < wrld.height()):
                                 # No need to check impossible moves
-                                if not wrld.wall_at(p.x + dx, p.y + dy) and not wrld.explosion_at(p.x + dx, p.y + dy) :  # dont allow walls
+                                if not wrld.wall_at(p.x + dx, p.y + dy) and not wrld.explosion_at(p.x + dx,
+                                                                                                  p.y + dy):  # dont allow walls
                                     self.decoyGoal = (p.x + dx, p.y + dy)
                                     break
                         else:
                             continue
                         break
 
-
                 print("placed bomb")
                 print(self.decoyGoal)
                 sm.bombToWalk()
 
-        #put anything here that should trigger after the turn is over
+        # put anything here that should trigger after the turn is over
         for b in bv:
-            if b.timer == 0: #about to explode next turn to trigger reset
-                self.TrackedBomb = (b.x,b.y)
+            if b.timer == 0:  # about to explode next turn to trigger reset
+                self.TrackedBomb = (b.x, b.y)
 
             if (self.TrackedBomb is not None) and wrld.explosion_at(self.TrackedBomb[0], self.TrackedBomb[1]):
                 self.resetTrigger = True
@@ -272,7 +264,6 @@ class TestCharacter(CharacterEntity):
             current = frontier.get()
 
             if current[1] == goal:
-
                 return came_from
 
             for next in TestCharacter.getPlayerNeighbors(current[1], wrld, allowWalls):
@@ -344,7 +335,7 @@ class Node:
         if depth != 1:  # if this isnt the bottom level, create list of children
             possiblemonstermoves = dict()
             unreachable = False
-            for m in root.world.monsters.values(): # calculate all monster money moves
+            for m in root.world.monsters.values():  # calculate all monster money moves
                 if m[0].name == "stupid":
                     scanRange = 2 + 2
                 if m[0].name == "aggressive":
@@ -380,7 +371,7 @@ class Node:
                                             # No need to check impossible moves
                                             if not root.world.wall_at(m[0].x + dx, m[0].y + dy):
                                                 possiblemonstermoves[m[0]].append((dx, dy))
-                    else: #use minimax
+                    else:  # use minimax
                         for dx in range(-scanRange, scanRange + 1):
                             # Avoid out-of-bounds access
                             if (m[0].x + dx >= 0) and (m[0].x + dx < root.world.width()):
@@ -407,7 +398,7 @@ class Node:
                             # No need to check impossible moves
 
                             if not root.world.wall_at(p.x + pdx, p.y + pdy):  #####
-                                root.world.me(p).move(pdx, pdy) #apply player move
+                                root.world.me(p).move(pdx, pdy)  # apply player move
                                 if not root.path:
                                     newPath = (pdx, pdy)
                                 newNode = Node.newNode(SensedWorld.from_world(root.world), newPath)
@@ -422,7 +413,9 @@ class Node:
                                         i += 1
                                     # Get new world
                                     (newWrld, events) = root.world.next()  # get new world with moved entities
-                                    newNode.children.append(Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path),events, pathgoal))
+                                    newNode.children.append(
+                                        Node.initExpectimax(ent, depth - 1, Node.newNode(newWrld, root.path), events,
+                                                            pathgoal))
                                 root.children.append(newNode)
 
             return root
