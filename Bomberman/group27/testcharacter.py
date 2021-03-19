@@ -47,6 +47,10 @@ class TestCharacter(CharacterEntity):
         self.resetTrigger = True
         self.TrackedBomb = None
 
+    @staticmethod
+    def getDistanceTo(cur, goal):
+        return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
+    
     def do(self, wrld):
 
         bv = wrld.bombs.values()
@@ -57,6 +61,9 @@ class TestCharacter(CharacterEntity):
         while sm.current_state != BombermanSM.finish:
             if not self.goalQ:
                 self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
+            if self.getDistanceTo((p.x, p.y), wrld.exitcell) <= 2:
+                self.goalQ.clear()
+                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) 
 
             if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
                 if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
@@ -240,10 +247,6 @@ class TestCharacter(CharacterEntity):
         #     self.stuckCounter += 1
         # if self.stuckCounter > 10:
         #     self.place_bomb()
-
-    @staticmethod
-    def getDistanceTo(cur, goal):
-        return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
 
     @staticmethod
     def getPlayerNeighbors(startCoords, wrld, allowWalls):
