@@ -43,7 +43,7 @@ class TestCharacter(CharacterEntity):
         self.decoyGoal = (-69, -69)
         self.depth = 3
         self.chaseLength = 0
-        self.bombFreq = 4
+        self.bombFreq = 3
         self.resetTrigger = True
         self.TrackedBomb = None
 
@@ -129,14 +129,14 @@ class TestCharacter(CharacterEntity):
 
                 move = (-99 ,-99)
                 scanRange = 1
-
+                danger = False
                 for m in wrld.monsters.values():  # check how far we are from each monster
                     if m[0].name == "stupid":
-                        scanRange = 2 + 1
+                        scanRange = 2 + 2
                     if m[0].name == "aggressive":
-                        scanRange = 4 + 1
+                        scanRange = 4 + 2
                     if m[0].name == "selfpreserving":
-                        scanRange = 2 + 1
+                        scanRange = 2 + 2
 
                     #if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
                         #danger = True
@@ -150,8 +150,11 @@ class TestCharacter(CharacterEntity):
                             unreachable = True
                             break
 
-                if not unreachable and len(mpath) >= scanRange:
-                #if danger: # if we are in danger, use expectimax
+                    if not unreachable and len(mpath) <= scanRange:
+                        danger = True
+                        break
+
+                if danger: # if we are in danger, use expectimax
                     self.chaseLength += 1
                     print(goal)
                     root = Node.initExpectimax(self, self.depth, Node.newNode(SensedWorld.from_world(wrld), []), [], goal)
@@ -348,11 +351,11 @@ class Node:
             unreachable = False
             for m in root.world.monsters.values(): # calculate all monster money moves
                 if m[0].name == "stupid":
-                    scanRange = 2 + 1
+                    scanRange = 2 + 2
                 if m[0].name == "aggressive":
-                    scanRange = 3 + 1
+                    scanRange = 3 + 2
                 if m[0].name == "selfpreserving":
-                    scanRange = 2 + 1
+                    scanRange = 2 + 2
 
                 calcpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y), False)
                 fpath = [(p.x, p.y)]
@@ -457,11 +460,11 @@ class Node:
 
             for m in root.world.monsters.values():  # check how far we are from each monster
                 if m[0].name == "stupid":
-                    scanRange = 2
+                    scanRange = 2 + 1
                 elif m[0].name == "aggressive":
-                    scanRange = 3
+                    scanRange = 3 + 1
                 elif m[0].name == "selfpreserving":
-                    scanRange = 2
+                    scanRange = 2 + 1
 
                 monsterpath = TestCharacter.Astar(root.world, (m[0].x, m[0].y), (p.x, p.y), False)
                 mpath = [(p.x, p.y)]
