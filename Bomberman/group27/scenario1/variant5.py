@@ -30,7 +30,7 @@ g.add_monster(SelfPreservingMonster("aggressive", # name
 g.add_character(TestCharacter("me", # name
                               "C",  # avatar
                               0, 0,  # position
-                              [(7,6),(7,14)] #targets
+                              [] #targets
 ))
 
 # g.add_character(InteractiveCharacter("me", # name

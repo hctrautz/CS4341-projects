@@ -88,7 +88,7 @@ def variant15(g):
     g.add_character(TestCharacter("me",  # name
                                      "C",  # avatar
                                      0, 0,  # position
-                                     [(7,6),(7,14)]))
+                                     []))
 
     # Run!
     g.go(1)
