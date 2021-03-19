@@ -145,8 +145,6 @@ class TestCharacter(CharacterEntity):
                     if m[0].name == "selfpreserving":
                         scanRange = 2 + 2
 
-                    #if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
-                        #danger = True
                     unreachable = False
                     monsterpath = TestCharacter.Astar(wrld, (m[0].x, m[0].y), (p.x, p.y), False)
                     mpath = [(p.x, p.y)]
@@ -241,12 +239,6 @@ class TestCharacter(CharacterEntity):
 
             if (self.TrackedBomb is not None) and wrld.explosion_at(self.TrackedBomb[0], self.TrackedBomb[1]):
                 self.resetTrigger = True
-
-        # #check that we arent super stuck
-        # if (p.y,p.y) == self.previousPose:
-        #     self.stuckCounter += 1
-        # if self.stuckCounter > 10:
-        #     self.place_bomb()
 
     @staticmethod
     def getPlayerNeighbors(startCoords, wrld, allowWalls):
@@ -402,7 +394,6 @@ class Node:
                 else:
                     possiblemonstermoves[m[0]] = [(0, 0)]  # if they are far away, just make them stationary
 
-            # args = tuple(possiblemonstermoves.values())
             bigboi = list(itertools.product(*possiblemonstermoves.values()))
 
             for pdx in [-1, 0, 1]:  # check each possible player move
