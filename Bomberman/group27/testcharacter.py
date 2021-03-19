@@ -43,7 +43,7 @@ class TestCharacter(CharacterEntity):
         self.decoyGoal = (-69, -69)
         self.depth = 3
         self.chaseLength = 0
-        self.bombFreq = 3
+        self.bombFreq = 2
         self.resetTrigger = True
         self.TrackedBomb = None
 
