@@ -47,6 +47,10 @@ class TestCharacter(CharacterEntity):
         self.resetTrigger = True
         self.TrackedBomb = None
 
+    @staticmethod
+    def getDistanceTo(cur, goal):
+        return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
+    
     def do(self, wrld):
 
         bv = wrld.bombs.values()
@@ -57,6 +61,9 @@ class TestCharacter(CharacterEntity):
         while sm.current_state != BombermanSM.finish:
             if not self.goalQ:
                 self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) # if the Q is empty, add the goal
+            if self.getDistanceTo((p.x, p.y), wrld.exitcell) <= 2:
+                self.goalQ.clear()
+                self.goalQ.append((wrld.exitcell[0], wrld.exitcell[1])) 
 
             if p.x == self.goalQ[0][0] and p.y == self.goalQ[0][1]: # if bomberman has reached next goal
                 if not (p.x == wrld.exitcell[0] and p.y == wrld.exitcell[1]): # if not the actual goal
@@ -138,8 +145,6 @@ class TestCharacter(CharacterEntity):
                     if m[0].name == "selfpreserving":
                         scanRange = 2 + 2
 
-                    #if m[0].x - scanRange <= p.x <= m[0].x + scanRange and m[0].y - scanRange <= p.y <= m[0].y + scanRange:
-                        #danger = True
                     unreachable = False
                     monsterpath = TestCharacter.Astar(wrld, (m[0].x, m[0].y), (p.x, p.y), False)
                     mpath = [(p.x, p.y)]
@@ -234,16 +239,6 @@ class TestCharacter(CharacterEntity):
 
             if (self.TrackedBomb is not None) and wrld.explosion_at(self.TrackedBomb[0], self.TrackedBomb[1]):
                 self.resetTrigger = True
-
-        # #check that we arent super stuck
-        # if (p.y,p.y) == self.previousPose:
-        #     self.stuckCounter += 1
-        # if self.stuckCounter > 10:
-        #     self.place_bomb()
-
-    @staticmethod
-    def getDistanceTo(cur, goal):
-        return abs(cur[0] - goal[0]) + abs(cur[1] - goal[1])
 
     @staticmethod
     def getPlayerNeighbors(startCoords, wrld, allowWalls):
@@ -399,7 +394,6 @@ class Node:
                 else:
                     possiblemonstermoves[m[0]] = [(0, 0)]  # if they are far away, just make them stationary
 
-            # args = tuple(possiblemonstermoves.values())
             bigboi = list(itertools.product(*possiblemonstermoves.values()))
 
             for pdx in [-1, 0, 1]:  # check each possible player move
